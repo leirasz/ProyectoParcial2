@@ -28,3 +28,19 @@ string FechaHora::obtenerHora() {
     actualizarFechaHora();
     return to_string(hora) + ":" + to_string(minuto) + ":" + to_string(segundo);
 }
+
+// Getters
+int FechaHora::getAnio() const { return anio; }
+int FechaHora::getMes() const { return mes; }
+int FechaHora::getDia() const { return dia; }
+int FechaHora::getHora() const { return hora; }
+int FechaHora::getMinuto() const { return minuto; }
+int FechaHora::getSegundo() const { return segundo; }
+
+// Setters
+void FechaHora::setAnio(int a) { anio = a; }
+void FechaHora::setMes(int m) { mes = m; }
+void FechaHora::setDia(int d) { dia = d; }
+void FechaHora::setHora(int h) { hora = h; }
+void FechaHora::setMinuto(int m) { minuto = m; }
+void FechaHora::setSegundo(int s) { segundo = s; }
