@@ -2,6 +2,7 @@
 #include <iostream>
 #include <conio.h>
 #include <cstdlib>
+#include <cstring>
 #include <cctype> // para isdigit
 
 using namespace std;
@@ -212,4 +213,51 @@ string Validaciones::ingresarNumeroTelefonico(char msj[50]) {
     } while (i != 10 || numero[0] != '0');
 
     return string(numero);
+}
+float ingresarMonto(const char* mensaje) {
+    char cad[20];
+    char c;
+    int i = 0;
+    bool tienePunto = false;
+    int decimales = 0;
+
+    printf("%s", mensaje);
+
+    while ((c = _getch()) != 13) { // Enter
+        if (c >= '0' && c <= '9') {
+            if (tienePunto) {
+                if (decimales < 2) {
+                    printf("%c", c);
+                    cad[i++] = c;
+                    decimales++;
+                }
+            } else {
+                printf("%c", c);
+                cad[i++] = c;
+            }
+        }
+        else if (c == '.' && !tienePunto && i > 0) {
+            printf("%c", c);
+            cad[i++] = c;
+            tienePunto = true;
+        }
+        else if (c == 8 && i > 0) { // Backspace
+            printf("\b \b");
+            i--;
+            if (cad[i] == '.') {
+                tienePunto = false;
+            } else if (tienePunto && decimales > 0) {
+                decimales--;
+            }
+        }
+    }
+
+    cad[i] = '\0';
+
+    if (strlen(cad) == 0 || cad[0] == '.') {
+        printf("\nEntrada invalida.\n");
+        return ingresarMonto(mensaje); // Reintenta
+    }
+
+    return atof(cad);
 }

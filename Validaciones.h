@@ -13,6 +13,7 @@ public:
     string ingresarOperacion(char msj[50]);
     string ingresarCedula(char msj[50]);
     string ingresarNumeroTelefonico(char msj[50]);
+    float ingresarMonto(const char* mensaje);
 
 
 private:
