@@ -2,6 +2,7 @@
 #include <iostream>
 #include <conio.h>
 #include <cstdlib>
+#include <cctype> // para isdigit
 
 using namespace std;
 
@@ -118,7 +119,7 @@ string Validaciones::ingresarOperacion(char msj[50]) {
 string Validaciones::ingresarCedula(char msj[50]) {
     char c;
     int i = 0;
-    char cedula[11];  // 10 dígitos + '\0'
+    char cedula[11];  // 10 digitos + '\0'
 
     do {
         system("cls");
@@ -140,7 +141,7 @@ string Validaciones::ingresarCedula(char msj[50]) {
         cedula[i] = '\0';
 
         if (!esCedulaValida(string(cedula))) {
-            cout << "\nCédula no válida. Intente de nuevo.\n";
+            cout << "\nCedula no valida Intente de nuevo\n";
             system("pause");
         }
 
