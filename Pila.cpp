@@ -7,12 +7,12 @@ Pila<T>::Pila() {
 }
 
 template <typename T>
-Pila<T>::~Pila() {    
-    while(tope != nullptr) {
+Pila<T>::~Pila() {
+    while (tope != nullptr) {
         NodoS<T>* temp = tope;
         tope = tope->siguiente;
         delete temp;
-    }   
+    }
 }
 
 template <typename T>

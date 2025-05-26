@@ -5,13 +5,14 @@
 template <typename T>
 class Pila{
     public  :
+        Pila();
+        ~ Pila();
         void push(T movimiento);
         void imprimir();
         bool vacia() const;
         T cima() const;
         void pop();
-        Pila();
-        ~ Pila();
+        
     private :
     NodoS<T>* tope;
 };
