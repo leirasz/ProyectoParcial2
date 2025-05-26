@@ -1,4 +1,6 @@
 #include "CuentaBancaria.h"
+#include "Pila.h"          // ← NECESARIO
+#include "Movimiento.h" 
 #include <cstdlib>
 
 CuentaBancaria::CuentaBancaria() : saldo(0.0f) {
