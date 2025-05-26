@@ -1,14 +1,18 @@
 #include "Movimiento.h"
+#include <cstdlib>
 
 Movimiento::Movimiento() : monto(0.0), numeroMovimiento(0) {}
 
 Movimiento::Movimiento(float monto, bool esDeposito, int numeroMovimiento)
     : monto(monto), numeroMovimiento(numeroMovimiento) {
     FechaHora fh;
+    Anio anio;
+    anio.setAnio(fh.getAnio());
+    anio.setAnioBisiesto((fh.getAnio() % 4 == 0 && fh.getAnio() % 100 != 0) || (fh.getAnio() % 400 == 0));
 
     fechaMov.setDia(fh.getDia());
     fechaMov.setMes(fh.getMes());
-    fechaMov.setAnio(fh.getAnio());
+    fechaMov.setAnio(anio);
 
     time.setHoras(fh.getHora());
     time.setMinutos(fh.getMinuto());
@@ -23,57 +27,45 @@ float Movimiento::getMonto() const {
     return monto;
 }
 
-void Movimientos::setMonto(float newMonto) {
+void Movimiento::setMonto(float newMonto) {
     monto = newMonto;
 }
 
-std::string Movimientos::getIDMovimiento() const {
+std::string Movimiento::getIDMovimiento() const {
     return IDMovimiento;
 }
 
-void Movimientos::setIDMovimiento(const std::string& newIDMovimiento) {
+void Movimiento::setIDMovimiento(const std::string& newIDMovimiento) {
     IDMovimiento = newIDMovimiento;
 }
 
-Fecha Movimientos::getFechaMov() const {
+Fecha Movimiento::getFechaMov() const {
     return fechaMov;
 }
 
-void Movimientos::setFechaMov(const Fecha& newFechaMov) {
+void Movimiento::setFechaMov(const Fecha& newFechaMov) {
     fechaMov = newFechaMov;
 }
 
-Hora Movimientos::getHora() const {
+Hora Movimiento::getHora() const {
     return time;
 }
 
-void Movimientos::setHora(const Hora& newHora) {
+void Movimiento::setHora(const Hora& newHora) {
     time = newHora;
 }
 
-int Movimientos::getNumeroMovimiento() const {
+int Movimiento::getNumeroMovimiento() const {
     return numeroMovimiento;
 }
 
-void Movimientos::setNumeroMovimiento(int num) {
+void Movimiento::setNumeroMovimiento(int num) {
     numeroMovimiento = num;
 }
 
-void Movimientos::generarID(bool esDeposito) {
-    std::string tipo = esDeposito ? "D" : "R";
-
-    std::string diaStr = (fechaMov.getDia() < 10 ? "0" : "") + std::to_string(fechaMov.getDia());
-    std::string mesStr = (fechaMov.getMes() < 10 ? "0" : "") + std::to_string(fechaMov.getMes());
-    std::string anioStr = std::to_string(fechaMov.getAnio());
-
-    std::string horaStr = (time.getHora() < 10 ? "0" : "") + std::to_string(time.getHora());
-    std::string minutoStr = (time.getMinuto() < 10 ? "0" : "") + std::to_string(time.getMinuto());
-    std::string segundoStr = (time.getSegundo() < 10 ? "0" : "") + std::to_string(time.getSegundo());
-
-    std::string numMovStr = (numeroMovimiento < 10 ? "00" :
-                            numeroMovimiento < 100 ? "0" : "") + std::to_string(numeroMovimiento);
-
-    IDMovimiento = tipo + "-" + diaStr + mesStr + anioStr + "-" +
-                   horaStr + minutoStr + segundoStr + "-" + numMovStr;
+void Movimiento::generarID(bool esDeposito) {
+    IDMovimiento = "";
+    for (int i = 0; i < 10; ++i) {
+        IDMovimiento += std::to_string(rand() % 10);
+    }
 }
-// ID formato es: T-DDMMYYYY-HHMMSS-NNN
