@@ -6,8 +6,9 @@ class NodoS{
     public:
         T dato;
         NodoS<T>* siguiente;
-
-        Nodo(T valor){
+        NodoS();                      // constructor por defecto
+   
+        NodoS(T valor){
             dato = valor;
             siguiente = nullptr;
         }
