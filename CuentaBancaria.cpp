@@ -1,5 +1,6 @@
 #include "CuentaBancaria.h"
 #include <cstdlib>
+#include "Pila.h"
 
 CuentaBancaria::CuentaBancaria() : saldo(0.0f) {
     generarID();
