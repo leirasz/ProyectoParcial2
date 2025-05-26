@@ -64,3 +64,11 @@ void CuentaBancaria::imprimirMovimientos() {
         copia.pop();
     }
 }
+void CuentaBancaria::imprimir() {
+    std::cout << "Tipo de cuenta: " << tipoCuenta << std::endl;
+    std::cout << "ID: " << ID << std::endl;
+    std::cout << "Saldo: $" << saldo << std::endl;
+    std::cout << "Movimientos:" << std::endl;
+    imprimirMovimientos();
+    std::cout << "---------------------------" << std::endl;
+}
