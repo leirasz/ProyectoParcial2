@@ -12,6 +12,8 @@ public:
     char ingresarCaracter(char msj[50]);
     string ingresarOperacion(char msj[50]);
     string ingresarCedula(char msj[50]);
+    string ingresarNumeroTelefonico(char msj[50]);
+
 
 private:
     bool esCedulaValida(string cedula);

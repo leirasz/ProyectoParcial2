@@ -180,3 +180,36 @@ bool Validaciones::validarDigitoVerificador(string cedula) {
     int verificador = (10 - (suma % 10)) % 10;
     return verificador == (cedula[9] - '0');
 }
+string Validaciones::ingresarNumeroTelefonico(char msj[50]) {
+    char c;
+    int i = 0;
+    char numero[11]; // 10 digitos + '\0'
+
+    do {
+        system("cls");
+        i = 0;
+        cout << msj << endl;
+
+        while ((c = getch()) != 13) {
+            if (c >= '0' && c <= '9') {
+                if (i < 10) {
+                    numero[i++] = c;
+                    cout << c;
+                }
+            } else if (c == 8 && i > 0) {
+                i--;
+                cout << "\b \b";
+            }
+        }
+
+        numero[i] = '\0';
+
+        if (i != 10 || numero[0] != '0') {
+            cout << "\nNumero invalido Debe tener 10 digitos y comenzar con 0\n";
+            system("pause");
+        }
+
+    } while (i != 10 || numero[0] != '0');
+
+    return string(numero);
+}
