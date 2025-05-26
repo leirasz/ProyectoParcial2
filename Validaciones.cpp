@@ -205,12 +205,12 @@ string Validaciones::ingresarNumeroTelefonico(char msj[50]) {
 
         numero[i] = '\0';
 
-        if (i != 10 || numero[0] != '0') {
-            cout << "\nNumero invalido Debe tener 10 digitos y comenzar con 0\n";
+        if (i != 10 || numero[0] != '0'|| numero[1] != '9') {
+            cout << "\nNumero invalido Debe tener 10 digitos y comenzar con 09\n";
             system("pause");
         }
 
-    } while (i != 10 || numero[0] != '0');
+    } while (i != 10 || numero[0] != '0'|| numero[1] != '9');
 
     return string(numero);
 }

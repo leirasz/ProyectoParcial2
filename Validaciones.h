@@ -19,7 +19,7 @@ public:
 private:
     bool esCedulaValida(string cedula);
     bool validarLongitud(string cedula);
-    bool validarNumeros(string cedula); // usa isdigit
+    bool validarNumeros(string cedula);
     bool validarDigitoVerificador(string cedula);
 };
 

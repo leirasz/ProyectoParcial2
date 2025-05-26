@@ -48,10 +48,10 @@ void Sistema::menuPrincipal() {
 void Sistema::registrarTitular() {
     system("cls");
     cout << "--- REGISTRAR TITULAR ---" << endl;
-    string nombre = val.ingresarCadena((char*)"Ingrese nombre:");
-    string apellido = val.ingresarCadena((char*)"Ingrese apellido:");
-    string cedula = val.ingresarCedula((char*)"Ingrese cedula:");
-    string telefono = val.ingresarNumeroTelefonico((char*)"Ingrese telefono:");
+    string nombre = val.ingresarCadena((char*)"\nIngrese nombre:");
+    string apellido = val.ingresarCadena((char*)"\nIngrese apellido:");
+    string cedula = val.ingresarCedula((char*)"\nIngrese cedula:");
+    string telefono = val.ingresarNumeroTelefonico((char*)"\nIngrese telefono:");
 
     Persona persona;
     persona.setNombre(nombre);
@@ -79,46 +79,35 @@ Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
 
 void Sistema::crearCuenta() {
     system("cls");
-    cout << "--- CREAR CUENTA ---" << endl;
-    string cedula = val.ingresarCedula((char*)"Ingrese cedula del titular:");
+    cout << "--- CREAR CUENTA ---\n" << endl;
+    string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular: ");
     Titular* titular = buscarTitularPorCI(cedula);
-
     if (!titular) {
-        cout << "Titular no encontrado." << endl;
+        cout << "\nTitular no encontrado." << endl;
         system("pause");
         return;
     }
 
-    string tipo = val.ingresarCadena((char*)"Ingrese tipo de cuenta (Corriente/Ahorro):");
+    string tipo = val.ingresarCadena((char*)"\nIngrese tipo de cuenta (Corriente/Ahorro): ");
     CuentaBancaria* nuevaCuenta = new CuentaBancaria();
     nuevaCuenta->setTipoCuenta(tipo);
     nuevaCuenta->generarID();
 
-    FechaHora fechaHora;
-    Anio anio;
-    anio.setAnio(fechaHora.getAnio());
-    anio.setAnioBisiesto((fechaHora.getAnio() % 4 == 0 && fechaHora.getAnio() % 100 != 0) || (fechaHora.getAnio() % 400 == 0));
-
-    Fecha fecha;
-    fecha.setDia(fechaHora.getDia());
-    fecha.setMes(fechaHora.getMes());
-    fecha.setAnio(anio);
-    nuevaCuenta->setFechaCre(fecha);
-    nuevaCuenta->setSaldo(0);
-    float saldoInicial = val.ingresarFlotante((char*)"Ingrese saldo inicial:");
-    nuevaCuenta->setSaldo(saldoInicial);
+    //... (asignar fecha, saldo, etc)
 
     if (tipo == "Corriente") {
         if (titular->getCuentaCorriente() != nullptr) {
-            cout << "Este titular ya tiene una cuenta corriente." << endl;
+            cout << "\nEste titular ya tiene una cuenta corriente.\n" << endl;
             delete nuevaCuenta;
         } else {
             titular->setCuentaCorriente(nuevaCuenta);
-            cout << "Cuenta corriente creada exitosamente." << endl;
+            cout << "\nCuenta corriente creada exitosamente.\n" << endl;
+            nuevaCuenta->imprimir();  // <-- Aquí muestras la información
         }
     } else if (tipo == "Ahorro") {
         titular->agregarCuentaAhorro(nuevaCuenta);
         cout << "\nCuenta de ahorro creada exitosamente.\n" << endl;
+        nuevaCuenta->imprimir();  // <-- Aquí muestras la información
     } else {
         cout << "\nTipo de cuenta no valido.\n" << endl;
         delete nuevaCuenta;
@@ -126,6 +115,7 @@ void Sistema::crearCuenta() {
 
     system("pause");
 }
+
 
 void Sistema::realizarDeposito() {
     if (titulares.vacia()) {
@@ -401,7 +391,7 @@ void Sistema::buscarMovimientosPorFecha() {
 void Sistema::buscarPorCedula() {
     system("cls");
     cout << "--- BUSQUEDA PERSONALIZADA DE TITULAR ---" << endl;
-    string criterioOriginal = val.ingresarCadena((char*)"Ingrese cualquier dato a buscar (CI, nombre o apellido):");
+    string criterioOriginal = val.ingresarCadena((char*)"Ingrese cualquier dato a buscar (nombre o apellido):");
 
     // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
     auto toLower = [](std::string s) -> std::string {

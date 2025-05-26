@@ -21,8 +21,6 @@ public:
     void imprimir() const;
 };
 
-// Implementaciones
-
 template <typename T>
 Pila<T>::Pila() {
     tope = nullptr;
