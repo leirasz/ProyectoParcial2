@@ -1,5 +1,5 @@
-#ifndef MOVIMIENTOS_H
-#define MOVIMIENTOS_H
+#ifndef MOVIMIENTO_H
+#define MOVIMIENTO_H
 
 #include <string>
 #include "Fecha.h"

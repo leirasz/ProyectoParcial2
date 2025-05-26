@@ -1,6 +1,5 @@
 #include "CuentaBancaria.h"
 #include <cstdlib>
-#include "Pila.h"
 
 CuentaBancaria::CuentaBancaria() : saldo(0.0f) {
     generarID();
@@ -54,6 +53,7 @@ void CuentaBancaria::generarID() {
         ID += std::to_string(rand() % 10);
     }
 }
+
 void CuentaBancaria::imprimirMovimientos() {
     Pila<Movimiento> copia = movimientos;
     while (!copia.vacia()) {

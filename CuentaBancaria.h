@@ -3,8 +3,9 @@
 
 #include <string>
 #include "Fecha.h"
+#include "Movimiento.h"
 #include "Pila.h"
-#include "Movimiento.h"  // Clase individual de movimiento
+  // Clase individual de movimiento
 
 class CuentaBancaria {
 private:

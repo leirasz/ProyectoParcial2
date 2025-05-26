@@ -1,6 +1,7 @@
 #include "Movimiento.h"
 #include <cstdlib>
 #include <iostream>
+#include <ctime>
 
 Movimiento::Movimiento() : monto(0.0), numeroMovimiento(0) {}
 
