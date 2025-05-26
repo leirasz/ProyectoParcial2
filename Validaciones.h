@@ -6,18 +6,17 @@ using namespace std;
 
 class Validaciones {
 public:
-    int ingresarEntero(const char* msj);
-    float ingresarFlotante(const char* msj);
-    string ingresarCadena(const char* msj);
-    char ingresarCaracter(const char* msj);
-    string ingresarOperacion(const char* msj);
-    string ingresarCedula(const char* msj);
+    int ingresarEntero(char msj[50]);
+    float ingresarFlotante(char msj[50]);
+    string ingresarCadena(char msj[50]);
+    char ingresarCaracter(char msj[50]);
+    string ingresarOperacion(char msj[50]);
+    string ingresarCedula(char msj[50]);
 
 private:
     bool esCedulaValida(string cedula);
     bool validarLongitud(string cedula);
     bool validarNumeros(string cedula);
-    bool validarRegion(string cedula);
     bool validarDigitoVerificador(string cedula);
 };
 

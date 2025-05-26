@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int Validaciones::ingresarEntero(const char* msj) {
+int Validaciones::ingresarEntero(char msj[50]) {
     char c;
     int i = 0;
     char dato[10];
@@ -27,7 +27,7 @@ int Validaciones::ingresarEntero(const char* msj) {
     return atoi(dato);
 }
 
-float Validaciones::ingresarFlotante(const char* msj) {
+float Validaciones::ingresarFlotante(char msj[50]) {
     char c;
     int i = 0;
     char dato[15];
@@ -56,7 +56,7 @@ float Validaciones::ingresarFlotante(const char* msj) {
     return atof(dato);
 }
 
-string Validaciones::ingresarCadena(const char* msj) {
+string Validaciones::ingresarCadena(char msj[50]) {
     char c;
     int i = 0;
     char dato[50];
@@ -79,7 +79,7 @@ string Validaciones::ingresarCadena(const char* msj) {
     return string(dato);
 }
 
-char Validaciones::ingresarCaracter(const char* msj) {
+char Validaciones::ingresarCaracter(char msj[50]) {
     char c;
     cout << msj << endl;
 
@@ -92,7 +92,7 @@ char Validaciones::ingresarCaracter(const char* msj) {
     }
 }
 
-string Validaciones::ingresarOperacion(const char* msj) {
+string Validaciones::ingresarOperacion(char msj[50]) {
     char c;
     int i = 0;
     char dato[50];
@@ -115,7 +115,7 @@ string Validaciones::ingresarOperacion(const char* msj) {
     return string(dato);
 }
 
-string Validaciones::ingresarCedula(const char* msj) {
+string Validaciones::ingresarCedula(char msj[50]) {
     char c;
     int i = 0;
     char cedula[11];  // 10 dígitos + '\0'
@@ -152,7 +152,6 @@ string Validaciones::ingresarCedula(const char* msj) {
 bool Validaciones::esCedulaValida(string cedula) {
     return validarLongitud(cedula) &&
            validarNumeros(cedula) &&
-           validarRegion(cedula) &&
            validarDigitoVerificador(cedula);
 }
 
@@ -165,11 +164,6 @@ bool Validaciones::validarNumeros(string cedula) {
         if (!isdigit(c)) return false;
     }
     return true;
-}
-
-bool Validaciones::validarRegion(string cedula) {
-    int region = stoi(cedula.substr(0, 2));
-    return region >= 1 && region <= 24;
 }
 
 bool Validaciones::validarDigitoVerificador(string cedula) {
