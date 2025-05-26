@@ -8,15 +8,15 @@
 class Persona
 {
 public:
-   std::string getCI();
+   std::string getCI() const;
    void setCI(std::string newCI);
-   std::string getTelefono();
+   std::string getTelefono() const;
    void setTelefono(std::string newTelefono);
-   std::string getNombre();
+   std::string getNombre() const;
    void setNombre(std::string newNombre);
-   std::string getApellido();
+   std::string getApellido() const;
    void setApellido(std::string newApellido);
-   std::string getCorreo();
+   std::string getCorreo() const;
    void setCorreo(std::string newCorreo);
    Fecha getFechaNa();
    void setFechaNa(Fecha newFechaNa);
