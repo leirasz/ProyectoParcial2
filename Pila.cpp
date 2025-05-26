@@ -8,7 +8,7 @@ Pila<T>::Pila() {
 
 template <typename T>
 Pila<T>::~Pila() {    
-    Nwhile(tope != nullptr) {
+    while(tope != nullptr) {
         NodoS<T>* temp = tope;
         tope = tope->siguiente;
         delete temp;
@@ -30,4 +30,26 @@ void Pila<T>::imprimir() {
         actual = actual->siguiente;
     }
     std::cout << std::endl;
+}
+
+template <typename T>
+bool Pila<T>::vacia() const {
+    return tope == nullptr;
+}
+
+template <typename T>
+T Pila<T>::cima() const {
+    if (tope != nullptr) {
+        return tope->dato;
+    }
+    throw std::runtime_error("La pila está vacía.");
+}
+
+template <typename T>
+void Pila<T>::pop() {
+    if (tope != nullptr) {
+        NodoS<T>* temp = tope;
+        tope = tope->siguiente;
+        delete temp;
+    }
 }

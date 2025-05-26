@@ -31,11 +31,11 @@ public:
     std::string getTipoCuenta() const;
     void setTipoCuenta(const std::string& newTipoCuenta);
 
-    // Operaciones sobre movimientos
     void agregarMovimiento(const Movimiento& mov);
-    Pila<Movimiento>& getMovimientos();  // Referencia para acceso/modificación
+    Pila<Movimiento>& getMovimientos();  
 
-    void CuentaBancaria::generarID();
+    void generarID();
+    void imprimirMovimientos();
 };
 
 #endif

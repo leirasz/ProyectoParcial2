@@ -7,6 +7,9 @@ class Pila{
     public  :
         void push(T movimiento);
         void imprimir();
+        bool vacia() const;
+        T cima() const;
+        void pop();
         Pila();
         ~ Pila();
     private :

@@ -53,3 +53,11 @@ void CuentaBancaria::generarID() {
         ID += std::to_string(rand() % 10);
     }
 }
+void CuentaBancaria::imprimirMovimientos() {
+    Pila<Movimiento> copia = movimientos;
+    while (!copia.vacia()) {
+        Movimiento m = copia.cima();
+        m.imprimir();
+        copia.pop();
+    }
+}

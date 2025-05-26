@@ -36,6 +36,7 @@ public:
 
     int getNumeroMovimiento() const;
     void setNumeroMovimiento(int num);
+    void imprimir();
 };
 
 #endif

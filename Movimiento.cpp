@@ -1,5 +1,6 @@
 #include "Movimiento.h"
 #include <cstdlib>
+#include <iostream>
 
 Movimiento::Movimiento() : monto(0.0), numeroMovimiento(0) {}
 
@@ -68,4 +69,16 @@ void Movimiento::generarID(bool esDeposito) {
     for (int i = 0; i < 10; ++i) {
         IDMovimiento += std::to_string(rand() % 10);
     }
+}
+
+void Movimiento::imprimir(){
+    std::cout << "ID: " << IDMovimiento << "\n";
+    std::cout << "Monto: $" << monto << "\n";
+    std::cout << "Fecha: " << fechaMov.getDia() << "/"
+              << fechaMov.getMes() << "/"
+              << fechaMov.getAnio().getAnio() << "\n";
+    std::cout << "Hora: " << time.getHoras() << ":"
+              << time.getMinutos() << ":"
+              << time.getSegundos() << "\n";
+    std::cout << "---------------------------\n";
 }
