@@ -20,6 +20,7 @@ public:
    void setCorreo(std::string newCorreo);
    Fecha getFechaNa();
    void setFechaNa(Fecha newFechaNa);
+   void imprimir();
    Persona();
    ~Persona();
 

@@ -10,12 +10,12 @@ using namespace std;
 int Validaciones::ingresarEntero(char msj[50]) {
     char c;
     int i = 0;
-    char dato[10];
+    char dato[11];
     cout << msj << endl;
 
     while ((c = getch()) != 13) {
         if (c >= '0' && c <= '9') {
-            if (i < 9) {
+            if (i < 10) {
                 dato[i++] = c;
                 cout << c;
             }
@@ -62,22 +62,24 @@ string Validaciones::ingresarCadena(char msj[50]) {
     char c;
     int i = 0;
     char dato[50];
-
     cout << msj << endl;
-
-    while ((c = getch()) != 13) {
-        if (isalpha(c) || c == ' ') {
-            if (i < 49) {
-                dato[i++] = c;
-                cout << c;
+    
+    do {
+        i = 0;
+        while ((c = getch()) != 13) {
+            if (isalpha(c) || c == ' ') {
+                if (i < 49) {
+                    dato[i++] = c;
+                    cout << c;
+                }
+            } else if (c == 8 && i > 0) {
+                i--;
+                cout << "\b \b";
             }
-        } else if (c == 8 && i > 0) {
-            i--;
-            cout << "\b \b";
         }
-    }
-
-    dato[i] = '\0';
+        dato[i] = '\0';
+        
+    } while (i == 0);
     return string(dato);
 }
 
@@ -240,15 +242,16 @@ float ingresarMonto(const char* mensaje) {
             printf("%c", c);
             cad[i++] = c;
             tienePunto = true;
+            decimales = 0;
         }
         else if (c == 8 && i > 0) { // Backspace
-            printf("\b \b");
-            i--;
-            if (cad[i] == '.') {
+            if (cad[i - 1] == '.') {
                 tienePunto = false;
             } else if (tienePunto && decimales > 0) {
                 decimales--;
             }
+            printf("\b \b");
+            i--;
         }
     }
 
@@ -260,4 +263,62 @@ float ingresarMonto(const char* mensaje) {
     }
 
     return atof(cad);
+}
+string Validaciones::ingresarNumeros(char msj[50]) {
+    char c;
+    int i = 0;
+    char dato[11]; // Ajusta el tamaño según la longitud máxima de tu ID
+
+    cout << msj << endl;
+
+    while ((c = getch()) != 13) { // Enter
+        if (c >= '0' && c <= '9') {
+            if (i < 19) {
+                dato[i++] = c;
+                cout << c;
+            }
+        } else if (c == 8 && i > 0) { // Backspace
+            i--;
+            cout << "\b \b";
+        }
+    }
+
+    dato[i] = '\0';
+    return string(dato);
+}
+
+string Validaciones::ingresarCorreo(char msj[50]) {
+    char c;
+    int i = 0;
+    char correo[51]; // Máximo 50 caracteres + '\0'
+
+    do {
+        system("cls");
+        i = 0;
+        cout << msj << endl;
+
+        while ((c = getch()) != 13) {
+            if (isalnum(c) || c == '@' || c == '.' || c == '-' || c == '_') {
+                if (i < 50) {
+                    correo[i++] = c;
+                    cout << c;
+                }
+            } else if (c == 8 && i > 0) {
+                i--;
+                cout << "\b \b";
+            }
+        }
+        correo[i] = '\0';
+
+        // Validación básica de formato
+        string correoStr = string(correo);
+        size_t arroba = correoStr.find('@');
+        size_t punto = correoStr.find('.', arroba);
+        if (arroba == string::npos || punto == string::npos || arroba == 0 || punto == correoStr.length() - 1 || punto < arroba + 2) {
+            cout << "\nCorreo invalido. Debe tener formato usuario@dominio.ext\n";
+            system("pause");
+        } else {
+            return correoStr;
+        }
+    } while (true);
 }

@@ -14,13 +14,13 @@ public:
     string ingresarCedula(char msj[50]);
     string ingresarNumeroTelefonico(char msj[50]);
     float ingresarMonto(const char* mensaje);
-
-
-private:
+    string ingresarNumeros(char msj[50]);
+    string ingresarCorreo(char msj[50]);
     bool esCedulaValida(string cedula);
     bool validarLongitud(string cedula);
     bool validarNumeros(string cedula);
     bool validarDigitoVerificador(string cedula);
+    
 };
 
 #endif

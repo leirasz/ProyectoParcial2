@@ -1,5 +1,6 @@
 #include "Sistema.h"
 #include "Menu.h"
+#include "ValidacionFecha.h"
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -47,24 +48,59 @@ void Sistema::menuPrincipal() {
 
 void Sistema::registrarTitular() {
     system("cls");
-    cout << "--- REGISTRAR TITULAR ---" << endl;
-    string nombre = val.ingresarCadena((char*)"\nIngrese nombre:");
+    cout << "--- REGISTRAR TITULAR --- \n" << endl;
+    string nombre = val.ingresarCadena((char*)"Ingrese nombre:");
     string apellido = val.ingresarCadena((char*)"\nIngrese apellido:");
+    for (char& c : nombre) c = toupper(c);
+    for (char& c : apellido) c = toupper(c);
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula:");
     string telefono = val.ingresarNumeroTelefonico((char*)"\nIngrese telefono:");
+    string correo = val.ingresarCorreo((char*)"\nIngrese correo electronico:");
+
+    // Ingreso y validación de fecha de nacimiento usando ValidacionFecha
+    ValidacionFecha valFecha;
+    string fechaStr;
+    int dia, mes, anio;
+    bool fechaValida = false;
+    do {
+        valFecha.ingresarFecha(fechaStr, dia, mes, anio);
+        if (!valFecha.valoresValidos(dia, mes, anio)) {
+            cout << "\nFecha invalida. Intente de nuevo." << endl;
+            system("pause");
+            continue;
+        }
+        if (!valFecha.esMayorDeEdad(dia, mes, anio)) {
+            cout << "\nNo puede registrarse. Debe ser mayor de edad (18+)." << endl;
+            system("pause");
+            return;
+        }
+        fechaValida = true;
+    } while (!fechaValida);
+
+    Anio anioObj;
+    anioObj.setAnio(anio);
+    anioObj.setAnioBisiesto(valFecha.esBisiesto(anio));
+
+    Fecha fechaNacimiento;
+    fechaNacimiento.setDia(dia);
+    fechaNacimiento.setMes(mes);
+    fechaNacimiento.setAnio(anioObj);
 
     Persona persona;
     persona.setNombre(nombre);
     persona.setApellido(apellido);
     persona.setCI(cedula);
     persona.setTelefono(telefono);
+    persona.setCorreo(correo);
+    persona.setFechaNa(fechaNacimiento);
 
     Titular* nuevo = new Titular(persona);
     titulares.insertar(nuevo);
 
-    cout << "\nTitular registrado exitosamente.\n" << endl;
+    cout << "\nTitular registrado exitosamente." << endl;
     system("pause");
 }
+
 Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
     NodoDoble<Titular*>* actual = titulares.getCabeza();
     if (actual != nullptr) {
@@ -90,23 +126,30 @@ void Sistema::crearCuenta() {
 
     string tipo = val.ingresarCadena((char*)"\nIngrese tipo de cuenta (Corriente/Ahorro): ");
     CuentaBancaria* nuevaCuenta = new CuentaBancaria();
+    for (char& c : tipo) c = toupper(c);
     nuevaCuenta->setTipoCuenta(tipo);
     nuevaCuenta->generarID();
 
     //... (asignar fecha, saldo, etc)
 
-    if (tipo == "Corriente") {
+    if (tipo == "CORRIENTE") {
         if (titular->getCuentaCorriente() != nullptr) {
             cout << "\nEste titular ya tiene una cuenta corriente.\n" << endl;
             delete nuevaCuenta;
         } else {
             titular->setCuentaCorriente(nuevaCuenta);
             cout << "\nCuenta corriente creada exitosamente.\n" << endl;
-            nuevaCuenta->imprimir();  // <-- Aquí muestras la información
+            cout << "--- DATOS DEL TITULAR ---" << endl;
+            titular->getPersona().imprimir();
+            cout << "--- DATOS DE LA CUENTA ---" << endl;
+            nuevaCuenta->imprimir(); // <-- Aquí muestras la información
         }
-    } else if (tipo == "Ahorro") {
+    } else if (tipo == "AHORRO") {
         titular->agregarCuentaAhorro(nuevaCuenta);
         cout << "\nCuenta de ahorro creada exitosamente.\n" << endl;
+        cout << "--- DATOS DEL TITULAR ---" << endl;
+        titular->getPersona().imprimir();
+        cout << "--- DATOS DE LA CUENTA ---" << endl;
         nuevaCuenta->imprimir();  // <-- Aquí muestras la información
     } else {
         cout << "\nTipo de cuenta no valido.\n" << endl;
@@ -116,46 +159,45 @@ void Sistema::crearCuenta() {
     system("pause");
 }
 
-
 void Sistema::realizarDeposito() {
     if (titulares.vacia()) {
-        cout << "No hay titulares registrados." << endl;
+        cout << "\nNo hay titulares registrados.\n" << endl;
         system("pause");
         return;
     }
     system("cls");
     cout << "--- REALIZAR DEPOSITO ---" << endl;
-    string cedula = val.ingresarCedula((char*)"Ingrese cedula del titular:");
+    string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
 
     if (!titular) {
-        cout << "Titular no encontrado." << endl;
+        cout << "\nTitular no encontrado." << endl;
         system("pause");
         return;
     }
     if (!titular->getCuentaCorriente() && titular->getCuentasAhorro().vacia()) {
-        cout << "El titular no tiene cuentas registradas." << endl;
+        cout << "\nEl titular no tiene cuentas registradas.\n" << endl;
         system("pause");
         return;
     }
-    string tipo = val.ingresarCadena((char*)"Tipo de cuenta (Corriente/Ahorro):");
+    string tipo = val.ingresarCadena((char*)"\nTipo de cuenta (Corriente/Ahorro):");
+    for (char& c : tipo) c = toupper(c);
     CuentaBancaria* cuenta = nullptr;
 
-    int idCuenta = val.ingresarEntero((char*)"Ingrese ID de la cuenta:");
-    string idCuentaStr = to_string(idCuenta);
-
-    if (tipo == "Corriente") {
+    string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
+    
+    if (tipo == "CORRIENTE") {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta || cuenta->getID() != idCuentaStr) {
+        if (!cuenta || cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
-    } else if (tipo == "Ahorro") {
+    } else if (tipo == "AHORRO") {
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
         if (actual != nullptr) {
             do {
-                if (actual->dato->getID() == idCuentaStr) {
+                if (actual->dato->getID() == idCuenta) {
                     cuenta = actual->dato;
                     break;
                 }
@@ -173,24 +215,24 @@ void Sistema::realizarDeposito() {
         return;
     }
 
-    float monto = val.ingresarFlotante((char*)"Ingrese monto a depositar:");
+    float monto = val.ingresarFlotante((char*)"\nIngrese monto a depositar:\n");
     Movimiento mov(monto, true, cuenta->getMovimientos().vacia() ? 1 : cuenta->getMovimientos().cima().getNumeroMovimiento() + 1);
     cuenta->agregarMovimiento(mov);
     cuenta->setSaldo(cuenta->getSaldo() + monto);
 
-    cout << "Deposito realizado exitosamente." << endl;
+    cout << "\nDeposito realizado exitosamente.\n" << endl;
     system("pause");
 }
 
 void Sistema::realizarRetiro() {
     if (titulares.vacia()) {
-        cout << "No hay titulares registrados." << endl;
+        cout << "\nNo hay titulares registrados.\n" << endl;
         system("pause");
         return;
     }
     system("cls");
     cout << "--- REALIZAR RETIRO ---" << endl;
-    string cedula = val.ingresarCedula((char*)"Ingrese cedula del titular:");
+    string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:\n");
     Titular* titular = buscarTitularPorCI(cedula);
 
     if (!titular) {
@@ -203,24 +245,25 @@ void Sistema::realizarRetiro() {
         system("pause");
         return;
     }
-    string tipo = val.ingresarCadena((char*)"Tipo de cuenta (Corriente/Ahorro):");
+    string tipo = val.ingresarCadena((char*)"\nTipo de cuenta (Corriente/Ahorro):\n");
+    for (char& c : tipo) c = toupper(c);
     CuentaBancaria* cuenta = nullptr;
 
-    int idCuenta = val.ingresarEntero((char*)"Ingrese ID de la cuenta:");
-    string idCuentaStr = to_string(idCuenta);
+    string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
+    
 
-    if (tipo == "Corriente") {
+    if (tipo == "CORRIENTE") {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta || cuenta->getID() != idCuentaStr) {
+        if (!cuenta || cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
-    } else if (tipo == "Ahorro") {
+    } else if (tipo == "AHORRO") {
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
         if (actual != nullptr) {
             do {
-                if (actual->dato->getID() == idCuentaStr) {
+                if (actual->dato->getID() == idCuenta) {
                     cuenta = actual->dato;
                     break;
                 }
@@ -238,9 +281,9 @@ void Sistema::realizarRetiro() {
         return;
     }
 
-    float monto = val.ingresarFlotante((char*)"Ingrese monto a retirar:");
+    float monto = val.ingresarFlotante((char*)"\nIngrese monto a retirar:");
     if (monto > cuenta->getSaldo()) {
-        cout << "Saldo insuficiente." << endl;
+        cout << "\nSaldo insuficiente." << endl;
         system("pause");
         return;
     }
@@ -249,7 +292,7 @@ void Sistema::realizarRetiro() {
     cuenta->agregarMovimiento(mov);
     cuenta->setSaldo(cuenta->getSaldo() - monto);
 
-    cout << "Retiro realizado exitosamente." << endl;
+    cout << "\nRetiro realizado exitosamente." << endl;
     system("pause");
 }
 
@@ -261,7 +304,7 @@ void Sistema::guardarArchivoBin() {
         system("pause");
         return;
     }
-    ofstream archivo("cuentas.dat", ios::binary);
+    ofstream archivo("cuentas.bin", ios::binary);
     if (!archivo) {
         cout << "\nNo se pudo abrir el archivo.\n" << endl;
         system("pause");
@@ -337,7 +380,7 @@ void Sistema::guardarArchivoBin() {
         } while (actual != titulares.getCabeza());
     }
     archivo.close();
-    cout << "Cuentas guardadas en 'cuentas.dat'." << endl;
+    cout << "\nCuentas guardadas en 'cuentas.dat'.\n" << endl;
     system("pause");
 }
 
@@ -349,14 +392,14 @@ void Sistema::buscarMovimientosPorFecha() {
     }
     system("cls");
     cout << "--- BUSCAR MOVIMIENTOS POR FECHA ---" << endl;
-    string cedula = val.ingresarCedula((char*)"Ingrese cedula del titular:");
+    string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
     if (!titular) {
         cout << "\nTitular no encontrado.\n" << endl;
         system("pause");
         return;
     }
-    int dia = val.ingresarEntero((char*)"Ingrese dia:");
+    int dia = val.ingresarEntero((char*)"\nIngrese dia:");
     int mes = val.ingresarEntero((char*)"Ingrese mes:");
     int anio = val.ingresarEntero((char*)"Ingrese anio:");
 

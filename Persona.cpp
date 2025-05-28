@@ -2,6 +2,8 @@
 #include "Persona.h"
 #include <string>
 #include "Fecha.h"
+#include <iostream>
+using namespace std;
 
 std::string Persona::getCI() const
 {
@@ -61,6 +63,16 @@ Fecha Persona::getFechaNa()
 void Persona::setFechaNa(Fecha newFechaNa)
 {
    fechaNa = newFechaNa;
+}
+
+void Persona::imprimir() {
+    cout << "Nombre: " << nombre << " " << apellido << endl;
+    cout << "Cedula: " << CI << endl;
+    cout << "Telefono: " << telefono << endl;
+    cout << "Correo: " << correo << endl;
+    cout << "Fecha de nacimiento: " << fechaNa.getDia() << "/" 
+         << fechaNa.getMes() << "/" 
+         << fechaNa.getAnio().getAnio() << endl;
 }
 
 Persona::Persona()
