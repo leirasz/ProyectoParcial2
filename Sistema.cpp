@@ -26,6 +26,7 @@ void Sistema::menuPrincipal() {
         "Guardar Archivo Binario",
         "Buscar movimientos por fecha",
         "Buscar titular por datos",
+        "Busqueda personalizada",
         "Salir"
     };
     Menu menu;
@@ -39,7 +40,7 @@ void Sistema::menuPrincipal() {
             case 4: realizarRetiro(); break;
             case 5: guardarArchivoBin(); break;
             case 6: buscarMovimientosPorFecha(); break;
-            case 7: buscarPorCedula(); break;
+            case 7: buscarPersonalizada(); break;
             case 8: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
@@ -380,7 +381,7 @@ void Sistema::guardarArchivoBin() {
         } while (actual != titulares.getCabeza());
     }
     archivo.close();
-    cout << "\nCuentas guardadas en 'cuentas.dat'.\n" << endl;
+    cout << "\nCuentas guardadas en 'cuentas.bin'.\n" << endl;
     system("pause");
 }
 
@@ -399,9 +400,12 @@ void Sistema::buscarMovimientosPorFecha() {
         system("pause");
         return;
     }
-    int dia = val.ingresarEntero((char*)"\nIngrese dia:");
-    int mes = val.ingresarEntero((char*)"Ingrese mes:");
-    int anio = val.ingresarEntero((char*)"Ingrese anio:");
+
+    // Ingreso y validación de fecha usando ValidacionFecha
+    ValidacionFecha valFecha;
+    string fechaStr;
+    int dia, mes, anio;
+    valFecha.ingresarFecha(fechaStr, dia, mes, anio);
 
     auto filtrarMovimientos = [=](CuentaBancaria* cuenta) {
         Pila<Movimiento> movimientos = cuenta->getMovimientos();
@@ -431,9 +435,9 @@ void Sistema::buscarMovimientosPorFecha() {
     system("pause");
 }
 
-void Sistema::buscarPorCedula() {
+void Sistema::buscarPorTitular() {
     system("cls");
-    cout << "--- BUSQUEDA PERSONALIZADA DE TITULAR ---" << endl;
+    cout << "--- BUSQUEDA PERSONALIZADA ---" << endl;
     string criterioOriginal = val.ingresarCadena((char*)"Ingrese cualquier dato a buscar (nombre o apellido):");
 
     // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
@@ -476,3 +480,4 @@ void Sistema::buscarPorCedula() {
     }
     system("pause");
 }
+
