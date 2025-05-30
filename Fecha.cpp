@@ -1,7 +1,7 @@
 
 #include "Fecha.h"
 
-int Fecha::getDia(void)
+int Fecha::getDia(void) const
 {
    return dia;
 }
@@ -11,7 +11,7 @@ void Fecha::setDia(int newDia)
    dia = newDia;
 }
 
-int Fecha::getMes(void)
+int Fecha::getMes(void) const
 {
    return mes;
 }
@@ -21,7 +21,7 @@ void Fecha::setMes(int newMes)
    mes = newMes;
 }
 
-Anio Fecha::getAnio(void)
+Anio Fecha::getAnio(void) const
 {
    return anio;
 }

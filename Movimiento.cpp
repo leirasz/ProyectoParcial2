@@ -65,6 +65,13 @@ void Movimiento::setNumeroMovimiento(int num) {
     numeroMovimiento = num;
 }
 
+bool Movimiento::getTipo() const {
+    return tipo;
+}
+void Movimiento::setTipo(bool newTipo) {
+    tipo = newTipo;
+}
+
 void Movimiento::generarID(bool esDeposito) {
     IDMovimiento = "";
     for (int i = 0; i < 10; ++i) {

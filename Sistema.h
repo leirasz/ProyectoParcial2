@@ -23,7 +23,7 @@ public:
     void guardarArchivoBin();
     void buscarMovimientosPorFecha();
     void buscarPorTitular();
-    //void buscarPersonalizada();
+    void buscarPersonalizada();
     Titular* buscarTitularPorCI(const std::string& cedula);
 };
 

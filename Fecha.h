@@ -4,11 +4,11 @@
 class Fecha
 {
 public:
-   int getDia(void);
+   int getDia()const;
    void setDia(int newDia);
-   int getMes(void);
+   int getMes() const;
    void setMes(int newMes);
-   Anio getAnio(void);
+   Anio getAnio() const;
    void setAnio(Anio newAnio);
    Fecha();
    ~Fecha();

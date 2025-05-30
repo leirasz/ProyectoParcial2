@@ -322,3 +322,26 @@ string Validaciones::ingresarCorreo(char msj[50]) {
         }
     } while (true);
 }
+
+string Validaciones::ingresarTextoLibre(char msj[50]) {
+    char c;
+    int i = 0;
+    char dato[50];
+    cout << msj << endl;
+    do {
+        i = 0;
+        while ((c = getch()) != 13) { // Enter
+            if (isalnum(c) || c == ' ') { // Permite letras y números
+                if (i < 49) {
+                    dato[i++] = c;
+                    cout << c;
+                }
+            } else if (c == 8 && i > 0) { // Backspace
+                i--;
+                cout << "\b \b";
+            }
+        }
+        dato[i] = '\0';
+    } while (i == 0);
+    return string(dato);
+}

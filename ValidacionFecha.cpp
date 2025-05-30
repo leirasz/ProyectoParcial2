@@ -99,3 +99,12 @@ bool ValidacionFecha::ingresarFecha(std::string& fecha, int& dia, int& mes, int&
     } while (true);
 
 }
+int ValidacionFecha::compararFechas(int d1, int m1, int a1, int d2, int m2, int a2) {
+    if (a1 < a2) return -1;
+    if (a1 > a2) return 1;
+    if (m1 < m2) return -1;
+    if (m1 > m2) return 1;
+    if (d1 < d2) return -1;
+    if (d1 > d2) return 1;
+    return 0;
+}

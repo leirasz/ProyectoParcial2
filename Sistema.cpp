@@ -1,6 +1,9 @@
 #include "Sistema.h"
 #include "Menu.h"
 #include "ValidacionFecha.h"
+
+#include "ArchivoBinario.h"
+#include "CifradoCesar.h"
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -22,11 +25,11 @@ void Sistema::menuPrincipal() {
         "Registrar titular",
         "Crear cuenta",
         "Realizar deposito",
-        "Realizar retiro",
-        "Guardar Archivo Binario",
+        "Realizar retiro",        
         "Buscar movimientos por fecha",
         "Buscar titular por datos",
         "Busqueda personalizada",
+        "Guardar Archivo Binario",
         "Salir"
     };
     Menu menu;
@@ -38,10 +41,10 @@ void Sistema::menuPrincipal() {
             case 2: crearCuenta(); break;
             case 3: realizarDeposito(); break;
             case 4: realizarRetiro(); break;
-            case 5: guardarArchivoBin(); break;
+            case 5: buscarPersonalizada(); break;
             case 6: buscarMovimientosPorFecha(); break;
             case 7: buscarPorTitular(); break;
-            case 8: /*buscarPersonalizada();*/ break;
+            case 8: guardarArchivoBin(); break;
             case 9: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
@@ -137,8 +140,6 @@ void Sistema::crearCuenta() {
     nuevaCuenta->setTipoCuenta(tipo);
     nuevaCuenta->generarID();
 
-    //... (asignar fecha, saldo, etc)
-
     if (tipo == "CORRIENTE") {
         if (titular->getCuentaCorriente() != nullptr) {
             cout << "\nEste titular ya tiene una cuenta corriente.\n" << endl;
@@ -195,12 +196,22 @@ void Sistema::realizarDeposito() {
     
     if (tipo == "CORRIENTE") {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta || cuenta->getID() != idCuenta) {
+        if (!cuenta) {
+        cout << "\nEl titular no tiene cuenta corriente.\n" << endl;
+        system("pause");
+        return;
+        }
+        if (cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
     } else if (tipo == "AHORRO") {
+        if (titular->getCuentasAhorro().vacia()) {
+            cout << "\nEl titular no tiene cuentas de ahorro.\n" << endl;
+            system("pause");
+            return;
+        }
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
         if (actual != nullptr) {
             do {
@@ -258,15 +269,24 @@ void Sistema::realizarRetiro() {
 
     string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
     
-
-    if (tipo == "CORRIENTE") {
-        cuenta = titular->getCuentaCorriente();
-        if (!cuenta || cuenta->getID() != idCuenta) {
+        if (tipo == "CORRIENTE") {
+            cuenta = titular->getCuentaCorriente();
+            if (!cuenta) {
+            cout << "\nEl titular no tiene cuenta corriente.\n" << endl;
+            system("pause");
+            return;
+        }
+        if (cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
     } else if (tipo == "AHORRO") {
+        if (titular->getCuentasAhorro().vacia()) {
+            cout << "\nEl titular no tiene cuentas de ahorro.\n" << endl;
+            system("pause");
+            return;
+        }
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
         if (actual != nullptr) {
             do {
@@ -311,83 +331,18 @@ void Sistema::guardarArchivoBin() {
         system("pause");
         return;
     }
-    ofstream archivo("cuentas.bin", ios::binary);
-    if (!archivo) {
-        cout << "\nNo se pudo abrir el archivo.\n" << endl;
-        system("pause");
-        return;
-    }
+    // 1. Guardar en archivo temporal
+    ArchivoBinario::guardar(titulares, "cuentas_temp.bin");
 
-    NodoDoble<Titular*>* actual = titulares.getCabeza();
-    if (actual) {
-        do {
-            Titular* t = actual->dato;
-            Persona p = t->getPersona();
-            archivo.write(reinterpret_cast<char*>(&p), sizeof(Persona));
+    // 2. Cifrar el archivo temporal y guardar como cuentas.bin
+    int desplazamiento = 3; // Puedes elegir el desplazamiento que desees
+    
+    cifrarCesarArchivoBinario(std::string("cuentas_temp.bin"), std::string("cuentas.bin"), desplazamiento);
 
-            CuentaBancaria* c = t->getCuentaCorriente();
-            bool tieneCorriente = c != nullptr;
-            archivo.write(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
-            if (tieneCorriente) {
-                archivo.write(reinterpret_cast<char*>(c), sizeof(CuentaBancaria));
+    // 3. (Opcional) Eliminar el archivo temporal
+    remove("cuentas_temp.bin");
 
-                Pila<Movimiento> movs = c->getMovimientos();
-                Pila<Movimiento> copia = movs;
-                int count = 0;
-                Pila<Movimiento> temp = movs;
-                while (!temp.vacia()) {
-                    temp.pop();
-                    count++;
-                }
-                archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                while (!copia.vacia()) {
-                    Movimiento m = copia.cima();
-                    archivo.write(reinterpret_cast<char*>(&m), sizeof(Movimiento));
-                    copia.pop();
-                }
-            }
-
-            // Guardar cuentas de ahorro
-            int totalAhorros = 0;
-            NodoDoble<CuentaBancaria*>* nodoA = t->getCuentasAhorro().getCabeza();
-            if (nodoA) {
-                NodoDoble<CuentaBancaria*>* temp = nodoA;
-                do {
-                    totalAhorros++;
-                    temp = temp->siguiente;
-                } while (temp != nodoA);
-            }
-            archivo.write(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
-
-            if (nodoA) {
-                NodoDoble<CuentaBancaria*>* temp = nodoA;
-                do {
-                    CuentaBancaria* ahorro = temp->dato;
-                    archivo.write(reinterpret_cast<char*>(ahorro), sizeof(CuentaBancaria));
-
-                    Pila<Movimiento> movs = ahorro->getMovimientos();
-                    Pila<Movimiento> copia = movs;
-                    int count = 0;
-                    Pila<Movimiento> tmp = movs;
-                    while (!tmp.vacia()) {
-                        tmp.pop();
-                        count++;
-                    }
-                    archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                    while (!copia.vacia()) {
-                        Movimiento m = copia.cima();
-                        archivo.write(reinterpret_cast<char*>(&m), sizeof(Movimiento));
-                        copia.pop();
-                    }
-                    temp = temp->siguiente;
-                } while (temp != nodoA);
-            }
-
-            actual = actual->siguiente;
-        } while (actual != titulares.getCabeza());
-    }
-    archivo.close();
-    cout << "\nCuentas guardadas en 'cuentas.bin'.\n" << endl;
+    cout << "\nCuentas guardadas y cifradas en 'cuentas.bin'.\n" << endl;
     system("pause");
 }
 
@@ -398,52 +353,102 @@ void Sistema::buscarMovimientosPorFecha() {
         return;
     }
     system("cls");
-    cout << "--- BUSCAR MOVIMIENTOS POR FECHA ---" << endl;
-    string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
-    Titular* titular = buscarTitularPorCI(cedula);
-    if (!titular) {
-        cout << "\nTitular no encontrado.\n" << endl;
-        system("pause");
-        return;
+    cout << "--- BUSCAR MOVIMIENTOS POR RANGO DE FECHAS ---" << endl;
+
+    // Ingreso y validación de fechas de inicio y fin
+    ValidacionFecha valFecha;
+    string fechaStr1, fechaStr2;
+    int d1, m1, a1, d2, m2, a2;
+    cout << "\nFecha de INICIO:" << endl;
+    valFecha.ingresarFecha(fechaStr1, d1, m1, a1);
+    cout << "\nFecha de FIN:" << endl;
+    valFecha.ingresarFecha(fechaStr2, d2, m2, a2);
+
+    // Proceso para asegurar que la fecha menor sea la inicial
+    int iniDia, iniMes, iniAnio, finDia, finMes, finAnio;
+    if (valFecha.compararFechas(d1, m1, a1, d2, m2, a2) <= 0) {
+        iniDia = d1; iniMes = m1; iniAnio = a1;
+        finDia = d2; finMes = m2; finAnio = a2;
+    } else {
+        iniDia = d2; iniMes = m2; iniAnio = a2;
+        finDia = d1; finMes = m1; finAnio = a1;
     }
 
-    // Ingreso y validación de fecha usando ValidacionFecha
-    ValidacionFecha valFecha;
-    string fechaStr;
-    int dia, mes, anio;
-    valFecha.ingresarFecha(fechaStr, dia, mes, anio);
-
-    auto filtrarMovimientos = [=](CuentaBancaria* cuenta) {
-        Pila<Movimiento> movimientos = cuenta->getMovimientos();
-        Pila<Movimiento> copia = movimientos;
-        while (!copia.vacia()) {
-            Movimiento m = copia.cima();
-            Fecha f = m.getFechaMov();
-            if (f.getDia() == dia && f.getMes() == mes && f.getAnio().getAnio() == anio) {
-                cout << "Cuenta ID: " << cuenta->getID() << endl;
-                m.imprimir();
-            }
-            copia.pop();
-        }
+    // Función para saber si una fecha está en el rango
+    auto fechaEnRango = [&](const Fecha& f) {
+        int cmpIni = valFecha.compararFechas(iniDia, iniMes, iniAnio, f.getDia(), f.getMes(), f.getAnio().getAnio());
+        int cmpFin = valFecha.compararFechas(f.getDia(), f.getMes(), f.getAnio().getAnio(), finDia, finMes, finAnio);
+        return cmpIni <= 0 && cmpFin <= 0;
     };
 
-    if (titular->getCuentaCorriente()) {
-        filtrarMovimientos(titular->getCuentaCorriente());
-    }
-
-    NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
+    NodoDoble<Titular*>* actual = titulares.getCabeza();
+    bool encontrado = false;
     if (actual) {
         do {
-            filtrarMovimientos(actual->dato);
+            Titular* titular = actual->dato;
+            Persona p = titular->getPersona();
+            string nombreTitular = p.getNombre() + " " + p.getApellido();
+
+            // Cuenta corriente
+            CuentaBancaria* cc = titular->getCuentaCorriente();
+            if (cc) {
+                Pila<Movimiento> movimientos = cc->getMovimientos();
+                Pila<Movimiento> copia = movimientos;
+                while (!copia.vacia()) {
+                    Movimiento m = copia.cima();
+                    Fecha f = m.getFechaMov();
+                    if (fechaEnRango(f)) {
+                        cout << "Cuenta ID: " << cc->getID()
+                             << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
+                             << " | Titular: " << nombreTitular
+                             << " | Monto: " << m.getMonto()
+                             << " | Tipo: " << (m.getTipo() ? "Deposito" : "Retiro")
+                             << endl;
+                        encontrado = true;
+                    }
+                    copia.pop();
+                }
+            }
+
+            // Cuentas de ahorro
+            NodoDoble<CuentaBancaria*>* nodoA = titular->getCuentasAhorro().getCabeza();
+            if (nodoA) {
+                NodoDoble<CuentaBancaria*>* temp = nodoA;
+                do {
+                    CuentaBancaria* ca = temp->dato;
+                    Pila<Movimiento> movimientos = ca->getMovimientos();
+                    Pila<Movimiento> copia = movimientos;
+                    while (!copia.vacia()) {
+                        Movimiento m = copia.cima();
+                        Fecha f = m.getFechaMov();
+                        if (fechaEnRango(f)) {
+                            cout << "Cuenta ID: " << ca->getID()
+                                 << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
+                                 << " | Titular: " << nombreTitular
+                                 << " | Monto: " << m.getMonto()
+                                 << " | Tipo: " << (m.getTipo() ? "Deposito" : "Retiro")
+                                 << endl;
+                            encontrado = true;
+                        }
+                        copia.pop();
+                    }
+                    temp = temp->siguiente;
+                } while (temp != nodoA);
+            }
+
             actual = actual->siguiente;
-        } while (actual != titular->getCuentasAhorro().getCabeza());
+        } while (actual != titulares.getCabeza());
+    }
+
+    if (!encontrado) {
+        cout << "\nNo se encontraron movimientos en el rango de fechas.\n" << endl;
     }
     system("pause");
 }
 
 void Sistema::buscarPorTitular() {
     system("cls");
-    cout << "--- BUSQUEDA PERSONALIZADA ---" << endl;
+    cout << "--- BUSQUEDA POR TITULAR ---" << endl;
     string criterioOriginal = val.ingresarCadena((char*)"Ingrese cualquier dato a buscar (nombre o apellido):");
 
     // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
@@ -487,3 +492,151 @@ void Sistema::buscarPorTitular() {
     system("pause");
 }
 
+void Sistema::buscarPersonalizada() {
+    system("cls");
+    cout << "--- BUSQUEDA PERSONALIZADA GLOBAL ---" << endl;
+    string criterioOriginal = val.ingresarTextoLibre((char*)"Ingrese cualquier dato a buscar (nombre, apellido, cedula, telefono, correo, ID cuenta, tipo cuenta, saldo, movimiento, etc):");
+
+    // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
+    auto toLower = [](std::string s) -> std::string {
+        for (size_t i = 0; i < s.size(); ++i) {
+            if (s[i] >= 'A' && s[i] <= 'Z') {
+                s[i] += 32;
+            }
+        }
+        return s;
+    };
+
+    string criterio = toLower(criterioOriginal);
+
+    NodoDoble<Titular*>* actual = titulares.getCabeza();
+    bool encontrado = false;
+    if (actual) {
+        do {
+            Persona p = actual->dato->getPersona();
+            // Buscar en Persona
+            string ci = toLower(p.getCI());
+            string nombre = toLower(p.getNombre());
+            string apellido = toLower(p.getApellido());
+            string telefono = toLower(p.getTelefono());
+            string correo = toLower(p.getCorreo());
+
+            bool personaCoincide = ci.find(criterio) != string::npos ||
+                                   nombre.find(criterio) != string::npos ||
+                                   apellido.find(criterio) != string::npos ||
+                                   telefono.find(criterio) != string::npos ||
+                                   correo.find(criterio) != string::npos;
+
+            // Buscar en cuentas corriente y ahorro
+            auto buscarEnCuenta = [&](CuentaBancaria* cuenta) {
+                if (!cuenta) return false;
+                string idCuenta = toLower(cuenta->getID());
+                string tipoCuenta = toLower(cuenta->getTipoCuenta());
+                string saldo = toLower(to_string(cuenta->getSaldo()));
+
+                bool cuentaCoincide = idCuenta.find(criterio) != string::npos ||
+                                      tipoCuenta.find(criterio) != string::npos ||
+                                      saldo.find(criterio) != string::npos;
+
+                // Buscar en movimientos
+                bool movimientoCoincide = false;
+                Pila<Movimiento> movimientos = cuenta->getMovimientos();
+                Pila<Movimiento> copia = movimientos;
+                while (!copia.vacia()) {
+                    Movimiento m = copia.cima();
+                    string monto = toLower(to_string(m.getMonto()));
+                    string numMov = toLower(to_string(m.getNumeroMovimiento()));
+                    string tipoMov = m.getTipo() ? "deposito" : "retiro";
+                    tipoMov = toLower(tipoMov);
+
+                    // Fecha movimiento
+                    Fecha f = m.getFechaMov();
+                    string fecha = to_string(f.getDia()) + "/" + to_string(f.getMes()) + "/" + to_string(f.getAnio().getAnio());
+
+                    if (monto.find(criterio) != string::npos ||
+                        numMov.find(criterio) != string::npos ||
+                        tipoMov.find(criterio) != string::npos ||
+                        fecha.find(criterio) != string::npos) {
+                        movimientoCoincide = true;
+                        break;
+                    }
+                    copia.pop();
+                }
+
+                if (cuentaCoincide || movimientoCoincide) {
+                    cout << "\n--- DATOS DEL TITULAR ---" << endl;
+                    p.imprimir();
+                    cout << "--- DATOS DE LA CUENTA ---" << endl;
+                    cuenta->imprimir();
+                    // Mostrar movimientos que coincidan
+                    Pila<Movimiento> movimientos = cuenta->getMovimientos();
+                    Pila<Movimiento> copia = movimientos;
+                    bool movMostrado = false;
+                    while (!copia.vacia()) {
+                        Movimiento m = copia.cima();
+                        string monto = toLower(to_string(m.getMonto()));
+                        string numMov = toLower(to_string(m.getNumeroMovimiento()));
+                        string tipoMov = m.getTipo() ? "deposito" : "retiro";
+                        tipoMov = toLower(tipoMov);
+                        Fecha f = m.getFechaMov();
+                        string fecha = to_string(f.getDia()) + "/" + to_string(f.getMes()) + "/" + to_string(f.getAnio().getAnio());
+
+                        if (monto.find(criterio) != string::npos ||
+                            numMov.find(criterio) != string::npos ||
+                            tipoMov.find(criterio) != string::npos ||
+                            fecha.find(criterio) != string::npos) {
+                            if (!movMostrado) {
+                                cout << "--- MOVIMIENTOS COINCIDENTES ---" << endl;
+                                movMostrado = true;
+                            }
+                            m.imprimir();
+                        }
+                        copia.pop();
+                    }
+                    encontrado = true;
+                }
+                return cuentaCoincide || movimientoCoincide;
+            };
+
+            // Si coincide persona, mostrar todo
+            if (personaCoincide) {
+                cout << "\n--- DATOS DEL TITULAR ---" << endl;
+                p.imprimir();
+                if (actual->dato->getCuentaCorriente()) {
+                    cout << "--- CUENTA CORRIENTE ---" << endl;
+                    actual->dato->getCuentaCorriente()->imprimir();
+                }
+                NodoDoble<CuentaBancaria*>* nodoA = actual->dato->getCuentasAhorro().getCabeza();
+                if (nodoA) {
+                    int idx = 1;
+                    NodoDoble<CuentaBancaria*>* temp = nodoA;
+                    do {
+                        cout << "--- CUENTA DE AHORRO #" << idx++ << " ---" << endl;
+                        temp->dato->imprimir();
+                        temp = temp->siguiente;
+                    } while (temp != nodoA);
+                }
+                encontrado = true;
+            } else {
+                // Buscar en cuentas
+                if (buscarEnCuenta(actual->dato->getCuentaCorriente())) {
+                    // Ya mostrado dentro de la lambda
+                }
+                NodoDoble<CuentaBancaria*>* nodoA = actual->dato->getCuentasAhorro().getCabeza();
+                if (nodoA) {
+                    NodoDoble<CuentaBancaria*>* temp = nodoA;
+                    do {
+                        buscarEnCuenta(temp->dato);
+                        temp = temp->siguiente;
+                    } while (temp != nodoA);
+                }
+            }
+            actual = actual->siguiente;
+        } while (actual != titulares.getCabeza());
+    }
+
+    if (!encontrado) {
+        cout << "\nNo se encontraron coincidencias.\n" << endl;
+    }
+    system("pause");
+}

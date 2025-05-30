@@ -20,7 +20,7 @@ public:
     bool validarLongitud(string cedula);
     bool validarNumeros(string cedula);
     bool validarDigitoVerificador(string cedula);
-    
+    string ingresarTextoLibre(char msj[50]);
 };
 
 #endif

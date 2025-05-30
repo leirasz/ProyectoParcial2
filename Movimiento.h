@@ -13,7 +13,7 @@ private:
     Fecha fechaMov;
     Hora time;
     int numeroMovimiento; // Número de movimiento asignado por el titular
-
+    bool tipo; // true = deposito, false = retiro
     void generarID(bool esDeposito); // Construye el ID único usando concatenación
 
 public:
@@ -36,6 +36,10 @@ public:
 
     int getNumeroMovimiento() const;
     void setNumeroMovimiento(int num);
+
+    bool getTipo() const;
+    void setTipo(bool newTipo);
+    
     void imprimir();
 };
 
