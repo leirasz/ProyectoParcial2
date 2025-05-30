@@ -32,7 +32,7 @@ void Sistema::menuPrincipal() {
     Menu menu;
     int opcion;
     do {
-        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 8);
+        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 9);
         switch(opcion) {
             case 1: registrarTitular(); break;
             case 2: crearCuenta(); break;
@@ -40,11 +40,12 @@ void Sistema::menuPrincipal() {
             case 4: realizarRetiro(); break;
             case 5: guardarArchivoBin(); break;
             case 6: buscarMovimientosPorFecha(); break;
-            case 7: buscarPersonalizada(); break;
-            case 8: cout << "\nSaliendo...\n" << endl; break;
+            case 7: buscarPorTitular(); break;
+            case 8: /*buscarPersonalizada();*/ break;
+            case 9: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
-    } while(opcion != 8);
+    } while(opcion != 9);
 }
 
 void Sistema::registrarTitular() {
@@ -55,6 +56,11 @@ void Sistema::registrarTitular() {
     for (char& c : nombre) c = toupper(c);
     for (char& c : apellido) c = toupper(c);
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula:");
+    if (buscarTitularPorCI(cedula) != nullptr) {
+        cout << "\nYa existe un titular registrado con esa cedula.\n" << endl;
+        system("pause");
+        return;
+    }
     string telefono = val.ingresarNumeroTelefonico((char*)"\nIngrese telefono:");
     string correo = val.ingresarCorreo((char*)"\nIngrese correo electronico:");
 
