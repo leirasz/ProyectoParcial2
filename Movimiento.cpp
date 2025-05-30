@@ -5,8 +5,9 @@
 
 Movimiento::Movimiento() : monto(0.0), numeroMovimiento(0) {}
 
+
 Movimiento::Movimiento(float monto, bool esDeposito, int numeroMovimiento)
-    : monto(monto), numeroMovimiento(numeroMovimiento) {
+    : monto(monto), tipo(esDeposito), numeroMovimiento(numeroMovimiento) {
     FechaHora fh;
     Anio anio;
     anio.setAnio(fh.getAnio());

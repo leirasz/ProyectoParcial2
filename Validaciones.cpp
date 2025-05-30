@@ -216,7 +216,7 @@ string Validaciones::ingresarNumeroTelefonico(char msj[50]) {
 
     return string(numero);
 }
-float ingresarMonto(const char* mensaje) {
+float  Validaciones::ingresarMonto(const char* mensaje) {
     char cad[20];
     char c;
     int i = 0;
@@ -264,6 +264,7 @@ float ingresarMonto(const char* mensaje) {
 
     return atof(cad);
 }
+
 string Validaciones::ingresarNumeros(char msj[50]) {
     char c;
     int i = 0;

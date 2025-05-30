@@ -25,6 +25,8 @@ public:
     void buscarPorTitular();
     void buscarPersonalizada();
     Titular* buscarTitularPorCI(const std::string& cedula);
+    void crearBackup();
+    void mostrarAyuda();
 };
 
 #endif

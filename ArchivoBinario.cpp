@@ -1,8 +1,31 @@
 #include "ArchivoBinario.h"
+#include "Persona.h"
+#include "CuentaBancaria.h"
+#include "Movimiento.h"
+#include "Titular.h"
+#include "ListaDobleCircular.h"
 #include <fstream>
 #include <iostream>
 using namespace std;
 
+// --- FUNCIONES AUXILIARES PARA STRINGS ---
+void escribirString(ofstream& archivo, const std::string& s) {
+    size_t len = s.size();
+    archivo.write(reinterpret_cast<char*>(&len), sizeof(size_t));
+    archivo.write(s.c_str(), len);
+}
+
+void leerString(ifstream& archivo, std::string& s) {
+    size_t len = 0;
+    archivo.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+    char* buffer = new char[len + 1];
+    archivo.read(buffer, len);
+    buffer[len] = '\0';
+    s = buffer;
+    delete[] buffer;
+}
+
+// --- GUARDAR ---
 void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo) {
     ofstream archivo(nombreArchivo, ios::binary);
     if (!archivo) {
@@ -15,26 +38,54 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
         do {
             Titular* t = actual->dato;
             Persona p = t->getPersona();
-            archivo.write(reinterpret_cast<char*>(&p), sizeof(Persona));
+            // Guardar Persona campo por campo
+            escribirString(archivo, p.getCI());
+            escribirString(archivo, p.getNombre());
+            escribirString(archivo, p.getApellido());
+            escribirString(archivo, p.getTelefono());
+            escribirString(archivo, p.getCorreo());
+
+            // Cuenta corriente
             CuentaBancaria* c = t->getCuentaCorriente();
             bool tieneCorriente = c != nullptr;
             archivo.write(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
             if (tieneCorriente) {
-                archivo.write(reinterpret_cast<char*>(c), sizeof(CuentaBancaria));
+                escribirString(archivo, c->getID());
+                Fecha fechaCre = c->getFechaCre();
+                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+                float saldo = c->getSaldo();
+                archivo.write(reinterpret_cast<char*>(&saldo), sizeof(float));
+                escribirString(archivo, c->getTipoCuenta());
 
-                Pila<Movimiento> movs = c->getMovimientos();
-                Pila<Movimiento> copia = movs;
+                // Guardar movimientos de cuenta corriente
+                ListaDobleCircular<Movimiento*>& movs = c->getMovimientos();
                 int count = 0;
-                Pila<Movimiento> temp = movs;
-                while (!temp.vacia()) {
-                    temp.pop();
-                    count++;
+                NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
+                if (nodoMov) {
+                    NodoDoble<Movimiento*>* temp = nodoMov;
+                    do {
+                        count++;
+                        temp = temp->siguiente;
+                    } while (temp != nodoMov);
                 }
                 archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                while (!copia.vacia()) {
-                    Movimiento m = copia.cima();
-                    archivo.write(reinterpret_cast<char*>(&m), sizeof(Movimiento));
-                    copia.pop();
+                if (nodoMov) {
+                    NodoDoble<Movimiento*>* temp = nodoMov;
+                    do {
+                        Movimiento* m = temp->dato;
+                        escribirString(archivo, m->getIDMovimiento());
+                        Fecha fechaMov = m->getFechaMov();
+                        archivo.write(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                        Hora hora = m->getHora();
+                        archivo.write(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                        float monto = m->getMonto();
+                        archivo.write(reinterpret_cast<char*>(&monto), sizeof(float));
+                        bool tipo = m->getTipo();
+                        archivo.write(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                        int numMov = m->getNumeroMovimiento();
+                        archivo.write(reinterpret_cast<char*>(&numMov), sizeof(int));
+                        temp = temp->siguiente;
+                    } while (temp != nodoMov);
                 }
             }
 
@@ -54,21 +105,42 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
                 NodoDoble<CuentaBancaria*>* temp = nodoA;
                 do {
                     CuentaBancaria* ahorro = temp->dato;
-                    archivo.write(reinterpret_cast<char*>(ahorro), sizeof(CuentaBancaria));
+                    escribirString(archivo, ahorro->getID());
+                    Fecha fechaCreAhorro = ahorro->getFechaCre();
+                    archivo.write(reinterpret_cast<char*>(&fechaCreAhorro), sizeof(Fecha));
+                    float saldoAhorro = ahorro->getSaldo();
+                    archivo.write(reinterpret_cast<char*>(&saldoAhorro), sizeof(float));
+                    escribirString(archivo, ahorro->getTipoCuenta());
 
-                    Pila<Movimiento> movs = ahorro->getMovimientos();
-                    Pila<Movimiento> copia = movs;
+                    // Guardar movimientos de cuenta de ahorro
+                    ListaDobleCircular<Movimiento*>& movs = ahorro->getMovimientos();
                     int count = 0;
-                    Pila<Movimiento> tmp = movs;
-                    while (!tmp.vacia()) {
-                        tmp.pop();
-                        count++;
+                    NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
+                    if (nodoMov) {
+                        NodoDoble<Movimiento*>* tMov = nodoMov;
+                        do {
+                            count++;
+                            tMov = tMov->siguiente;
+                        } while (tMov != nodoMov);
                     }
                     archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                    while (!copia.vacia()) {
-                        Movimiento m = copia.cima();
-                        archivo.write(reinterpret_cast<char*>(&m), sizeof(Movimiento));
-                        copia.pop();
+                    if (nodoMov) {
+                        NodoDoble<Movimiento*>* tMov = nodoMov;
+                        do {
+                            Movimiento* m = tMov->dato;
+                            escribirString(archivo, m->getIDMovimiento());
+                            Fecha fechaMov = m->getFechaMov();
+                            archivo.write(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                            Hora hora = m->getHora();
+                            archivo.write(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                            float monto = m->getMonto();
+                            archivo.write(reinterpret_cast<char*>(&monto), sizeof(float));
+                            bool tipo = m->getTipo();
+                            archivo.write(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                            int numMov = m->getNumeroMovimiento();
+                            archivo.write(reinterpret_cast<char*>(&numMov), sizeof(int));
+                            tMov = tMov->siguiente;
+                        } while (tMov != nodoMov);
                     }
                     temp = temp->siguiente;
                 } while (temp != nodoA);
@@ -80,6 +152,7 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
     archivo.close();
 }
 
+// --- CARGAR ---
 void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo) {
     ifstream archivo(nombreArchivo, ios::binary);
     if (!archivo) {
@@ -89,22 +162,58 @@ void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::
 
     while (archivo.peek() != EOF) {
         // Leer Persona
+        std::string ci, nombre, apellido, telefono, correo;
+        leerString(archivo, ci);
+        leerString(archivo, nombre);
+        leerString(archivo, apellido);
+        leerString(archivo, telefono);
+        leerString(archivo, correo);
         Persona p;
-        archivo.read(reinterpret_cast<char*>(&p), sizeof(Persona));
+        p.setCI(ci);
+        p.setNombre(nombre);
+        p.setApellido(apellido);
+        p.setTelefono(telefono);
+        p.setCorreo(correo);
         Titular* t = new Titular(p);
 
         // Leer cuenta corriente
         bool tieneCorriente = false;
         archivo.read(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
         if (tieneCorriente) {
+            std::string id, tipoCuenta;
+            Fecha fechaCre;
+            float saldo;
+            leerString(archivo, id);
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
+            leerString(archivo, tipoCuenta);
+
             CuentaBancaria* cc = new CuentaBancaria();
-            archivo.read(reinterpret_cast<char*>(cc), sizeof(CuentaBancaria));
+            cc->setID(id);
+            cc->setFechaCre(fechaCre);
+            cc->setSaldo(saldo);
+            cc->setTipoCuenta(tipoCuenta);
+
             // Leer movimientos de cuenta corriente
             int count = 0;
             archivo.read(reinterpret_cast<char*>(&count), sizeof(int));
             for (int i = 0; i < count; ++i) {
-                Movimiento m;
-                archivo.read(reinterpret_cast<char*>(&m), sizeof(Movimiento));
+                std::string idMov;
+                Fecha fechaMov;
+                Hora hora;
+                float monto;
+                bool tipo;
+                int numero;
+                leerString(archivo, idMov);
+                archivo.read(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                archivo.read(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                archivo.read(reinterpret_cast<char*>(&monto), sizeof(float));
+                archivo.read(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                archivo.read(reinterpret_cast<char*>(&numero), sizeof(int));
+                Movimiento* m = new Movimiento(monto, tipo, numero);
+                m->setIDMovimiento(idMov);
+                m->setFechaMov(fechaMov);
+                m->setHora(hora);
                 cc->agregarMovimiento(m);
             }
             t->setCuentaCorriente(cc);
@@ -114,14 +223,40 @@ void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::
         int totalAhorros = 0;
         archivo.read(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
         for (int i = 0; i < totalAhorros; ++i) {
+            std::string id, tipoCuenta;
+            Fecha fechaCre;
+            float saldo;
+            leerString(archivo, id);
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
+            leerString(archivo, tipoCuenta);
+
             CuentaBancaria* ahorro = new CuentaBancaria();
-            archivo.read(reinterpret_cast<char*>(ahorro), sizeof(CuentaBancaria));
+            ahorro->setID(id);
+            ahorro->setFechaCre(fechaCre);
+            ahorro->setSaldo(saldo);
+            ahorro->setTipoCuenta(tipoCuenta);
+
             // Leer movimientos de cuenta de ahorro
             int count = 0;
             archivo.read(reinterpret_cast<char*>(&count), sizeof(int));
             for (int j = 0; j < count; ++j) {
-                Movimiento m;
-                archivo.read(reinterpret_cast<char*>(&m), sizeof(Movimiento));
+                std::string idMov;
+                Fecha fechaMov;
+                Hora hora;
+                float monto;
+                bool tipo;
+                int numero;
+                leerString(archivo, idMov);
+                archivo.read(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                archivo.read(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                archivo.read(reinterpret_cast<char*>(&monto), sizeof(float));
+                archivo.read(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                archivo.read(reinterpret_cast<char*>(&numero), sizeof(int));
+                Movimiento* m = new Movimiento(monto, tipo, numero);
+                m->setIDMovimiento(idMov);
+                m->setFechaMov(fechaMov);
+                m->setHora(hora);
                 ahorro->agregarMovimiento(m);
             }
             t->agregarCuentaAhorro(ahorro);

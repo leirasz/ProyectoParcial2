@@ -4,7 +4,7 @@
 #include <string>
 #include "Fecha.h"
 #include "Movimiento.h"
-#include "Pila.h"
+#include "ListaDobleCircular.h"
   // Clase individual de movimiento
 
 class CuentaBancaria {
@@ -13,7 +13,7 @@ private:
     Fecha fechaCre;
     float saldo;
     std::string tipoCuenta;  // Ahorros o Corriente
-    Pila<Movimiento> movimientos;
+    ListaDobleCircular<Movimiento*> movimientos;
 
 public:
     CuentaBancaria();
@@ -32,8 +32,9 @@ public:
     std::string getTipoCuenta() const;
     void setTipoCuenta(const std::string& newTipoCuenta);
 
-    void agregarMovimiento(const Movimiento& mov);
-    Pila<Movimiento>& getMovimientos();  
+    void agregarMovimiento(Movimiento* mov);
+    ListaDobleCircular<Movimiento*>& getMovimientos();
+    const ListaDobleCircular<Movimiento*>& getMovimientos() const;
 
     void generarID();
     void imprimirMovimientos();

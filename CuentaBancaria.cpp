@@ -41,11 +41,14 @@ void CuentaBancaria::setTipoCuenta(const std::string& newTipoCuenta) {
     tipoCuenta = newTipoCuenta;
 }
 
-void CuentaBancaria::agregarMovimiento(const Movimiento& mov) {
-    movimientos.push(mov);
+void CuentaBancaria::agregarMovimiento(Movimiento* mov) {
+    movimientos.insertar(mov);
 }
 
-Pila<Movimiento>& CuentaBancaria::getMovimientos() {
+ListaDobleCircular<Movimiento*>& CuentaBancaria::getMovimientos() {
+    return movimientos;
+}
+const ListaDobleCircular<Movimiento*>& CuentaBancaria::getMovimientos() const {
     return movimientos;
 }
 
@@ -57,11 +60,13 @@ void CuentaBancaria::generarID() {
 }
 
 void CuentaBancaria::imprimirMovimientos() {
-    Pila<Movimiento> copia = movimientos;
-    while (!copia.vacia()) {
-        Movimiento m = copia.cima();
-        m.imprimir();
-        copia.pop();
+    NodoDoble<Movimiento*>* actual = movimientos.getCabeza();
+    if (actual) {
+        do {
+            Movimiento* m = actual->dato;
+            if (m) m->imprimir();
+            actual = actual->siguiente;
+        } while (actual != movimientos.getCabeza());
     }
 }
 void CuentaBancaria::imprimir() {
