@@ -60,6 +60,10 @@ void CuentaBancaria::generarID() {
 }
 
 void CuentaBancaria::imprimirMovimientos() {
+    if (movimientos.vacia()) {
+        std::cout << "  (Sin movimientos)\n";
+        return;
+    }
     NodoDoble<Movimiento*>* actual = movimientos.getCabeza();
     if (actual) {
         do {
