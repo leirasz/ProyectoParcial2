@@ -42,6 +42,21 @@ void CuentaBancaria::setTipoCuenta(const std::string& newTipoCuenta) {
 }
 
 void CuentaBancaria::agregarMovimiento(Movimiento* mov) {
+    if (mov == nullptr) return;
+
+    if (mov->getTipo()) {
+        // Depósito
+        saldo += mov->getMonto();
+    } else {
+        // Retiro
+        if (mov->getMonto() <= saldo) {
+            saldo -= mov->getMonto();
+        } else {
+            std::cout << "Fondos insuficientes para realizar el retiro.\n";
+            return;
+        }
+    }
+
     movimientos.insertar(mov);
 }
 
@@ -60,6 +75,10 @@ void CuentaBancaria::generarID() {
 }
 
 void CuentaBancaria::imprimirMovimientos() {
+    if (movimientos.vacia()) {
+        std::cout << "  (Sin movimientos)\n";
+        return;
+    }
     NodoDoble<Movimiento*>* actual = movimientos.getCabeza();
     if (actual) {
         do {

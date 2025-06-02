@@ -47,14 +47,34 @@ void Sistema::menuPrincipal() {
             case 5: buscarMovimientosPorFecha(); break;
             case 6: buscarPorTitular(); break;
             case 7: buscarPersonalizada(); break;
-            case 8: guardarArchivoBin(); break;
+            case 8: menuSecundario(); break;
             case 9: mostrarAyuda(); break;
             case 10: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
     } while(opcion != 10);
 }
+void Sistema::menuSecundario(){
+    const char* opciones[] = {
+        "Guardar archivo sin cifrar",
+        "Guardar archivo cifrado",
+        "Decifrar archivo cifrado",
+        "Regresar al menu principal"
+    };
+    Menu menu;
+    int opcion;
+    do {
+        opcion = menu.ingresarMenu("Archivos Binarios", opciones, 4);
+        switch(opcion) {
+            case 1: guardarArchivoBinSinCifrar(); break;
+            case 2: guardarArchivoBinCifrado(); break;
+            case 3: decifrarArchivoCifrado(); break;
+            case 4: cout << "\nRegresando al menu principal...\n" << endl; break;
+            default: cout << "\nOpcion invalida." << endl; system("pause"); break;
+        }
+    } while(opcion != 4);
 
+}
 void Sistema::registrarTitular() {
     system("cls");
     cout << "--- REGISTRAR TITULAR --- \n" << endl;
@@ -181,6 +201,7 @@ void Sistema::realizarDeposito() {
     }
     system("cls");
     cout << "--- REALIZAR DEPOSITO ---" << endl;
+
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
 
@@ -189,37 +210,29 @@ void Sistema::realizarDeposito() {
         system("pause");
         return;
     }
+
     if (!titular->getCuentaCorriente() && titular->getCuentasAhorro().vacia()) {
         cout << "\nEl titular no tiene cuentas registradas.\n" << endl;
         system("pause");
         return;
     }
+
     string tipo = val.ingresarCadena((char*)"\nTipo de cuenta (Corriente/Ahorro):");
     for (char& c : tipo) c = toupper(c);
     CuentaBancaria* cuenta = nullptr;
 
     string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
-    
+
     if (tipo == "CORRIENTE") {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta) {
-            cout << "\nEl titular no tiene cuenta corriente.\n" << endl;
-            system("pause");
-            return;
-        }
-        if (cuenta->getID() != idCuenta) {
+        if (!cuenta || cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
     } else if (tipo == "AHORRO") {
-        if (titular->getCuentasAhorro().vacia()) {
-            cout << "\nEl titular no tiene cuentas de ahorro.\n" << endl;
-            system("pause");
-            return;
-        }
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
-        if (actual != nullptr) {
+        if (actual) {
             do {
                 if (actual->dato->getID() == idCuenta) {
                     cuenta = actual->dato;
@@ -240,37 +253,20 @@ void Sistema::realizarDeposito() {
     }
 
     float monto = val.ingresarMonto((char*)"\nIngrese monto a depositar:\n");
-    // Obtener el número de movimiento
-    ListaDobleCircular<Movimiento*> movs = cuenta->getMovimientos();
-    int numMov = 1;
-    if (!movs.vacia()) {
-        numMov = movs.getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
-    }
-    Movimiento* mov = new Movimiento(monto, true, numMov);
-    cuenta->agregarMovimiento(mov);
-    cuenta->setSaldo(cuenta->getSaldo() + monto);
 
-    // *** Obtener la lista actualizada después de agregar el movimiento ***
-    movs = cuenta->getMovimientos();
-    cout << "[DEBUG] Movimientos en la cuenta " << cuenta->getID() << " tras la operación:\n";
-    NodoDoble<Movimiento*>* actualMov = movs.getCabeza();
-    if (actualMov) {
-        do {
-            Movimiento* m = actualMov->dato;
-            if (m) {
-                std::cout << "  Movimiento #" << m->getNumeroMovimiento()
-                          << " | Monto: " << m->getMonto()
-                          << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
-                          << std::endl;
-            }
-            actualMov = actualMov->siguiente;
-        } while (actualMov != movs.getCabeza());
+    int numMov = 1;
+    if (!cuenta->getMovimientos().vacia()) {
+        numMov = cuenta->getMovimientos().getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
     }
+
+    Movimiento* mov = new Movimiento(monto, true, numMov);
+    cuenta->agregarMovimiento(mov);  // Ya actualiza el saldo
 
     cout << "\nDeposito realizado exitosamente.\n" << endl;
     system("pause");
     crearBackup();
 }
+
 
 void Sistema::realizarRetiro() {
     if (titulares.vacia()) {
@@ -280,6 +276,7 @@ void Sistema::realizarRetiro() {
     }
     system("cls");
     cout << "--- REALIZAR RETIRO ---" << endl;
+
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
 
@@ -288,37 +285,29 @@ void Sistema::realizarRetiro() {
         system("pause");
         return;
     }
+
     if (!titular->getCuentaCorriente() && titular->getCuentasAhorro().vacia()) {
         cout << "\nEl titular no tiene cuentas registradas.\n" << endl;
         system("pause");
         return;
     }
+
     string tipo = val.ingresarCadena((char*)"\nTipo de cuenta (Corriente/Ahorro):");
     for (char& c : tipo) c = toupper(c);
     CuentaBancaria* cuenta = nullptr;
 
     string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
-    
+
     if (tipo == "CORRIENTE") {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta) {
-            cout << "\nEl titular no tiene cuenta corriente.\n" << endl;
-            system("pause");
-            return;
-        }
-        if (cuenta->getID() != idCuenta) {
+        if (!cuenta || cuenta->getID() != idCuenta) {
             cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
             system("pause");
             return;
         }
     } else if (tipo == "AHORRO") {
-        if (titular->getCuentasAhorro().vacia()) {
-            cout << "\nEl titular no tiene cuentas de ahorro.\n" << endl;
-            system("pause");
-            return;
-        }
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
-        if (actual != nullptr) {
+        if (actual) {
             do {
                 if (actual->dato->getID() == idCuenta) {
                     cuenta = actual->dato;
@@ -339,39 +328,27 @@ void Sistema::realizarRetiro() {
     }
 
     float monto = val.ingresarMonto((char*)"\nIngrese monto a retirar:\n");
-    // Obtener el número de movimiento
-    ListaDobleCircular<Movimiento*> movs = cuenta->getMovimientos();
-    int numMov = 1;
-    if (!movs.vacia()) {
-        numMov = movs.getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
-    }
-    Movimiento* mov = new Movimiento(monto, true, numMov);
-    cuenta->agregarMovimiento(mov);
-    cuenta->setSaldo(cuenta->getSaldo() - monto);
 
-    // *** Obtener la lista actualizada después de agregar el movimiento ***
-    movs = cuenta->getMovimientos();
-    cout << "[DEBUG] Movimientos en la cuenta " << cuenta->getID() << " tras la operación:\n";
-    NodoDoble<Movimiento*>* actualMov = movs.getCabeza();
-    if (actualMov) {
-        do {
-            Movimiento* m = actualMov->dato;
-            if (m) {
-                std::cout << "  Movimiento #" << m->getNumeroMovimiento()
-                          << " | Monto: " << m->getMonto()
-                          << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
-                          << std::endl;
-            }
-            actualMov = actualMov->siguiente;
-        } while (actualMov != movs.getCabeza());
+    if (monto > cuenta->getSaldo()) {
+        cout << "\nFondos insuficientes para realizar el retiro.\n" << endl;
+        system("pause");
+        return;
     }
+
+    int numMov = 1;
+    if (!cuenta->getMovimientos().vacia()) {
+        numMov = cuenta->getMovimientos().getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
+    }
+
+    Movimiento* mov = new Movimiento(monto, false, numMov);
+    cuenta->agregarMovimiento(mov);  // Ya valida el saldo y actualiza
 
     cout << "\nRetiro realizado exitosamente.\n" << endl;
     system("pause");
     crearBackup();
 }
 
-void Sistema::guardarArchivoBin() {
+void Sistema::guardarArchivoBinCifrado() {
     system("cls");
     cout << "--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
     if (titulares.vacia()) {
@@ -379,18 +356,45 @@ void Sistema::guardarArchivoBin() {
         system("pause");
         return;
     }
-    // 1. Guardar en archivo temporal
     ArchivoBinario::guardar(titulares, "cuentas_temp.bin");
 
-    // 2. Cifrar el archivo temporal y guardar como cuentas.bin
     int desplazamiento = 3; // Puedes elegir el desplazamiento que desees
     
-    cifrarCesarArchivoBinario(std::string("cuentas_temp.bin"), std::string("cuentas.bin"), desplazamiento);
+    cifrarCesarArchivoBinario(std::string("cuentas_temp.bin"), std::string("cuentasCifrado.bin"), desplazamiento);
 
-    // 3. (Opcional) Eliminar el archivo temporal
     remove("cuentas_temp.bin");
 
-    cout << "\nCuentas guardadas y cifradas en 'cuentas.bin'.\n" << endl;
+    cout << "\nCuentas guardadas y cifradas en 'cuentasCifrado.bin'.\n" << endl;
+    system("pause");
+}
+void Sistema::guardarArchivoBinSinCifrar() {
+    system("cls");
+    cout << "--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
+    if (titulares.vacia()) {
+        cout << "\nNo hay titulares registrados para guardar.\n" << endl;
+        system("pause");
+        return;
+    }
+    ArchivoBinario::guardar(titulares, "cuentasSinCifrar.bin");
+
+    cout << "\nCuentas guardadas 'cuentasSinCifrar.bin'.\n" << endl;
+    system("pause");
+}
+
+void Sistema::decifrarArchivoCifrado() {
+    system("cls");
+    cout << "--- DECIFRAR ARCHIVO CIFRADO ---" << endl;
+    ifstream archivo("cuentasCifrado.bin", ios::binary);
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo cifrado.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    int desplazamiento = 3; 
+    cifrarCesarArchivoBinario(std::string("cuentasCifrado.bin"), std::string("cuentasDecifradas.bin"), -desplazamiento);
+    ArchivoBinario::guardar(titulares, "cuentasDecifradas.bin");
+    cout << "\nArchivo decifrado y cargado exitosamente.\n" << endl;
     system("pause");
 }
 

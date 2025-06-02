@@ -67,7 +67,7 @@ string Validaciones::ingresarCadena(char msj[50]) {
     do {
         i = 0;
         while ((c = getch()) != 13) {
-            if (isalpha(c) || c == ' ') {
+            if (isalpha(c)) {
                 if (i < 49) {
                     dato[i++] = c;
                     cout << c;
@@ -262,7 +262,14 @@ float  Validaciones::ingresarMonto(const char* mensaje) {
         return ingresarMonto(mensaje); // Reintenta
     }
 
-    return atof(cad);
+    float monto = atof(cad);
+
+    if (monto > 10000.0f) {
+        printf("\nEl monto no puede ser mayor a 10000.\n");
+        return ingresarMonto(mensaje); // Reintenta
+    }
+
+    return monto;
 }
 
 string Validaciones::ingresarNumeros(char msj[50]) {
@@ -332,7 +339,7 @@ string Validaciones::ingresarTextoLibre(char msj[50]) {
     do {
         i = 0;
         while ((c = getch()) != 13) { // Enter
-            if (isalnum(c) || c == ' ') { // Permite letras y números
+            if (isalnum(c)) { // Permite letras y números
                 if (i < 49) {
                     dato[i++] = c;
                     cout << c;

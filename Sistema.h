@@ -20,13 +20,17 @@ public:
     void crearCuenta();
     void realizarDeposito();
     void realizarRetiro();
-    void guardarArchivoBin();
+
     void buscarMovimientosPorFecha();
     void buscarPorTitular();
     void buscarPersonalizada();
     Titular* buscarTitularPorCI(const std::string& cedula);
     void crearBackup();
     void mostrarAyuda();
+    void menuSecundario();
+    void guardarArchivoBinCifrado();
+    void guardarArchivoBinSinCifrar();
+    void decifrarArchivoCifrado();
 };
 
 #endif
