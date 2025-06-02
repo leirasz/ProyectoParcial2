@@ -9,6 +9,7 @@ class ArchivoBinario {
 public:
     static void guardar(const ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo);
     void cargar(ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo);
+    static bool cargarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo);
 };
 
 #endif

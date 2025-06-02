@@ -295,6 +295,57 @@ string Validaciones::ingresarNumeros(char msj[50]) {
     return string(dato);
 }
 
+string Validaciones::ingresarCodigoBak(char msj[50]) {
+    char c;
+    int i = 0;
+    char dato[20];
+    cout << msj << endl;
+
+    do {
+        i = 0;
+        int guionBajo = 0;
+        while ((c = getch()) != 13) { // Enter
+            // Solo permite números en las posiciones 0-7 y 9-14
+            if ((i < 8 || (i > 8 && i < 15)) && c >= '0' && c <= '9') {
+                if (i < 19) {
+                    dato[i++] = c;
+                    cout << c;
+                }
+            }
+            // Solo permite un '_' en la posición 8
+            else if (i == 8 && c == '_') {
+                dato[i++] = c;
+                cout << c;
+                guionBajo++;
+            }
+            // Permite borrar
+            else if (c == 8 && i > 0) {
+                if (dato[i-1] == '_') guionBajo--;
+                i--;
+                cout << "\b \b";
+            }
+            // Permite escribir ".bak" solo al final
+            else if (i >= 15 && i < 19) {
+                const char* bak = ".bak";
+                if (c == bak[i - 15]) {
+                    dato[i++] = c;
+                    cout << c;
+                }
+            }
+        }
+        dato[i] = '\0';
+
+        // Validación final de formato
+        string strDato(dato);
+        if (i == 19 && dato[8] == '_' && strDato.substr(15, 4) == ".bak") {
+            return strDato;
+        } else {
+            cout << "\n\nFormato invalido. Ejemplo correcto: 20240602_153045.bak\n";
+            i = 0;
+        }
+    } while (true);
+}
+
 string Validaciones::ingresarCorreo(char msj[50]) {
     char c;
     int i = 0;

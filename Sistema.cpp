@@ -60,21 +60,29 @@ void Sistema::menuSecundario(){
         "Guardar archivo sin cifrar",
         "Guardar archivo cifrado",
         "Decifrar archivo cifrado",
+        "Restaurar backup", // Nueva opción
         "Regresar al menu principal"
     };
     Menu menu;
     int opcion;
     do {
-        opcion = menu.ingresarMenu("Archivos Binarios", opciones, 4);
+        opcion = menu.ingresarMenu("Archivos Binarios", opciones, 5);
         switch(opcion) {
             case 1: guardarArchivoBinSinCifrar(); break;
             case 2: guardarArchivoBinCifrado(); break;
             case 3: decifrarArchivoCifrado(); break;
-            case 4: cout << "\nRegresando al menu principal...\n" << endl; break;
+            case 4: { // Restaurar backup
+                system("cls");
+                cout << "--- RESTAURAR BACKUP ---" << endl;
+                string archivo = val.ingresarCodigoBak((char*)"Ingrese el nombre del archivo de backup (ejemplo: 20240601_153000.bak):");
+                Backups backup;
+                backup.restaurarBackup(titulares, archivo);
+                break;
+            }
+            case 5: cout << "\nRegresando al menu principal...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
-    } while(opcion != 4);
-
+    } while(opcion != 5);
 }
 void Sistema::registrarTitular() {
     system("cls");

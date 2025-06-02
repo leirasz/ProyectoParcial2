@@ -2,6 +2,7 @@
 #include <fstream>  
 #include <iostream>
 #include <ctime>
+#include "ArchivoBinario.h"
 
 void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
     if (titulares.vacia()) {
@@ -41,7 +42,6 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
             escribirString(p.getApellido());
             escribirString(p.getTelefono());
             escribirString(p.getCorreo());
-
             // Cuenta corriente
             CuentaBancaria* c = t->getCuentaCorriente();
             bool tieneCorriente = c != nullptr;
@@ -146,3 +146,19 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
     system("pause");
 }
 
+bool Backups::restaurarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& archivo) {
+    // Elimina todos los titulares actuales
+    while (!titulares.vacia()) {
+        Titular* t = titulares.eliminarPorCabeza();
+        delete t;
+    }
+    // Carga desde el archivo de backup
+    bool exito = ArchivoBinario::cargarBackup(titulares, archivo);
+    if (exito) {
+        std::cout << "\nBackup restaurado correctamente desde '" << archivo << "'.\n" << std::endl;
+    } else {
+        std::cout << "\nNo se pudo restaurar el backup desde '" << archivo << "'.\n" << std::endl;
+    }
+    system("pause");
+    return exito;
+}

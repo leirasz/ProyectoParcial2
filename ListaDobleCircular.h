@@ -17,6 +17,7 @@ public:
     void imprimirAdelante() const;
     void imprimirAtras() const;
     bool vacia() const;
+    T eliminarPorCabeza();
     NodoDoble<T>* getCabeza() const;
     ListaDobleCircular<T> getCuentasAhorro() const;
 };
@@ -86,9 +87,22 @@ template <typename T>
 NodoDoble<T>* ListaDobleCircular<T>::getCabeza() const {
     return cabeza;
 }
-
 template <typename T>
-ListaDobleCircular<T> ListaDobleCircular<T>::getCuentasAhorro() const {
-    return *this;
+T ListaDobleCircular<T>::eliminarPorCabeza() {
+    if (!cabeza) return nullptr;
+    NodoDoble<T>* nodoEliminar = cabeza;
+    T dato = nodoEliminar->dato;
+    if (cabeza->siguiente == cabeza) {
+        cabeza = nullptr;
+    } else {
+        NodoDoble<T>* anterior = cabeza->anterior;
+        NodoDoble<T>* siguiente = cabeza->siguiente;
+        anterior->siguiente = siguiente;
+        siguiente->anterior = anterior;
+        cabeza = siguiente;
+    }
+    delete nodoEliminar;
+    return dato;
 }
+
 #endif

@@ -267,3 +267,129 @@ void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::
 
     archivo.close();
 }
+bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& nombreArchivo) {
+    ifstream archivo(nombreArchivo, ios::binary);
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo para lectura.\n" << endl;
+        return false;
+    }
+
+    // Función auxiliar para leer strings
+    auto leerString = [](ifstream& archivo, std::string& s) {
+        size_t len = 0;
+        archivo.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+        char* buffer = new char[len + 1];
+        archivo.read(buffer, len);
+        buffer[len] = '\0';
+        s = buffer;
+        delete[] buffer;
+    };
+
+    while (archivo.peek() != EOF) {
+        // Leer Persona
+        std::string ci, nombre, apellido, telefono, correo;
+        leerString(archivo, ci);
+        leerString(archivo, nombre);
+        leerString(archivo, apellido);
+        leerString(archivo, telefono);
+        leerString(archivo, correo);
+        Persona p;
+        p.setCI(ci);
+        p.setNombre(nombre);
+        p.setApellido(apellido);
+        p.setTelefono(telefono);
+        p.setCorreo(correo);
+        Titular* t = new Titular(p);
+
+        // Leer cuenta corriente
+        bool tieneCorriente = false;
+        archivo.read(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
+        if (tieneCorriente) {
+            std::string id, tipoCuenta;
+            Fecha fechaCre;
+            float saldo;
+            leerString(archivo, id);
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
+            leerString(archivo, tipoCuenta);
+
+            CuentaBancaria* cc = new CuentaBancaria();
+            cc->setID(id);
+            cc->setFechaCre(fechaCre);
+            cc->setSaldo(saldo);
+            cc->setTipoCuenta(tipoCuenta);
+
+            // Leer movimientos de cuenta corriente
+            int count = 0;
+            archivo.read(reinterpret_cast<char*>(&count), sizeof(int));
+            for (int i = 0; i < count; ++i) {
+                std::string idMov;
+                Fecha fechaMov;
+                Hora hora;
+                float monto;
+                bool tipo;
+                int numero;
+                leerString(archivo, idMov);
+                archivo.read(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                archivo.read(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                archivo.read(reinterpret_cast<char*>(&monto), sizeof(float));
+                archivo.read(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                archivo.read(reinterpret_cast<char*>(&numero), sizeof(int));
+                Movimiento* m = new Movimiento(monto, tipo, numero);
+                m->setIDMovimiento(idMov);
+                m->setFechaMov(fechaMov);
+                m->setHora(hora);
+                cc->agregarMovimiento(m);
+            }
+            t->setCuentaCorriente(cc);
+        }
+
+        // Leer cuentas de ahorro
+        int totalAhorros = 0;
+        archivo.read(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
+        for (int i = 0; i < totalAhorros; ++i) {
+            std::string id, tipoCuenta;
+            Fecha fechaCre;
+            float saldo;
+            leerString(archivo, id);
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
+            leerString(archivo, tipoCuenta);
+
+            CuentaBancaria* ahorro = new CuentaBancaria();
+            ahorro->setID(id);
+            ahorro->setFechaCre(fechaCre);
+            ahorro->setSaldo(saldo);
+            ahorro->setTipoCuenta(tipoCuenta);
+
+            // Leer movimientos de cuenta de ahorro
+            int count = 0;
+            archivo.read(reinterpret_cast<char*>(&count), sizeof(int));
+            for (int j = 0; j < count; ++j) {
+                std::string idMov;
+                Fecha fechaMov;
+                Hora hora;
+                float monto;
+                bool tipo;
+                int numero;
+                leerString(archivo, idMov);
+                archivo.read(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
+                archivo.read(reinterpret_cast<char*>(&hora), sizeof(Hora));
+                archivo.read(reinterpret_cast<char*>(&monto), sizeof(float));
+                archivo.read(reinterpret_cast<char*>(&tipo), sizeof(bool));
+                archivo.read(reinterpret_cast<char*>(&numero), sizeof(int));
+                Movimiento* m = new Movimiento(monto, tipo, numero);
+                m->setIDMovimiento(idMov);
+                m->setFechaMov(fechaMov);
+                m->setHora(hora);
+                ahorro->agregarMovimiento(m);
+            }
+            t->agregarCuentaAhorro(ahorro);
+        }
+
+        titulares.insertar(t);
+    }
+
+    archivo.close();
+    return true;
+}

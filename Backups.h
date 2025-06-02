@@ -8,6 +8,6 @@
 class Backups {
 public:
     static void crearBackup(const ListaDobleCircular<Titular*>& titulares);
-    static void restaurarBackup();
+    bool restaurarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& archivo);
 };
 #endif
