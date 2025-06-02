@@ -87,6 +87,7 @@ template <typename T>
 NodoDoble<T>* ListaDobleCircular<T>::getCabeza() const {
     return cabeza;
 }
+<<<<<<< HEAD
 template <typename T>
 T ListaDobleCircular<T>::eliminarPorCabeza() {
     if (!cabeza) return nullptr;
@@ -106,3 +107,11 @@ T ListaDobleCircular<T>::eliminarPorCabeza() {
 }
 
 #endif
+=======
+
+//template <typename T>
+//ListaDobleCircular<T> ListaDobleCircular<T>::getCuentasAhorro() const {
+//    return *this;
+//}
+#endif
+>>>>>>> aba4e171db862f7253d54d672ff8142a7ea11bf2
