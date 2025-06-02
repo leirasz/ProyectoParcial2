@@ -4,6 +4,7 @@
 #include "FechaHora.h"
 #include "ArchivoBinario.h"
 #include "CifradoCesar.h"
+#include "Backups.h"
 #include <ctime>
 
 #include <fstream>
@@ -132,8 +133,9 @@ void Sistema::registrarTitular() {
     titulares.insertar(nuevo);
 
     cout << "\nTitular registrado exitosamente." << endl;
+    Backups backup;
+    backup.crearBackup(titulares);
     system("pause");
-    crearBackup();
 }
 
 Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
@@ -189,8 +191,10 @@ void Sistema::crearCuenta() {
         delete nuevaCuenta;
     }
 
+    Backups backup;
+    backup.crearBackup(titulares);
     system("pause");
-    crearBackup();
+
 }
 
 void Sistema::realizarDeposito() {
@@ -253,7 +257,8 @@ void Sistema::realizarDeposito() {
     }
 
     float monto = val.ingresarMonto((char*)"\nIngrese monto a depositar:\n");
-
+    // Obtener el número de movimiento
+    ListaDobleCircular<Movimiento*>& movs = cuenta->getMovimientos();
     int numMov = 1;
     if (!cuenta->getMovimientos().vacia()) {
         numMov = cuenta->getMovimientos().getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
@@ -263,8 +268,10 @@ void Sistema::realizarDeposito() {
     cuenta->agregarMovimiento(mov);  // Ya actualiza el saldo
 
     cout << "\nDeposito realizado exitosamente.\n" << endl;
+    Backups backup;
+    backup.crearBackup(titulares);
     system("pause");
-    crearBackup();
+    
 }
 
 
@@ -328,24 +335,43 @@ void Sistema::realizarRetiro() {
     }
 
     float monto = val.ingresarMonto((char*)"\nIngrese monto a retirar:\n");
-
     if (monto > cuenta->getSaldo()) {
-        cout << "\nFondos insuficientes para realizar el retiro.\n" << endl;
+        cout << "\nSaldo insuficiente para realizar el retiro.\n" << endl;
         system("pause");
         return;
     }
-
+    // Obtener el número de movimiento
+    ListaDobleCircular<Movimiento*>& movs = cuenta->getMovimientos();
     int numMov = 1;
     if (!cuenta->getMovimientos().vacia()) {
         numMov = cuenta->getMovimientos().getCabeza()->anterior->dato->getNumeroMovimiento() + 1;
     }
-
     Movimiento* mov = new Movimiento(monto, false, numMov);
-    cuenta->agregarMovimiento(mov);  // Ya valida el saldo y actualiza
+    cuenta->agregarMovimiento(mov);
+    cuenta->setSaldo(cuenta->getSaldo() - monto);
+
+    // *** Obtener la lista actualizada después de agregar el movimiento ***
+    movs = cuenta->getMovimientos();
+    cout << "[DEBUG] Movimientos en la cuenta " << cuenta->getID() << " tras la operación:\n";
+    NodoDoble<Movimiento*>* actualMov = movs.getCabeza();
+    if (actualMov) {
+        do {
+            Movimiento* m = actualMov->dato;
+            if (m) {
+                std::cout << "  Movimiento #" << m->getNumeroMovimiento()
+                          << " | Monto: " << m->getMonto()
+                          << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
+                          << std::endl;
+            }
+            actualMov = actualMov->siguiente;
+        } while (actualMov != movs.getCabeza());
+    }
 
     cout << "\nRetiro realizado exitosamente.\n" << endl;
+    Backups backup;
+    backup.crearBackup(titulares);
     system("pause");
-    crearBackup();
+
 }
 
 void Sistema::guardarArchivoBinCifrado() {
@@ -701,149 +727,7 @@ void Sistema::buscarPersonalizada() {
         cout << "\nNo se encontraron coincidencias.\n" << endl;
     }
     system("pause");
-}
-void Sistema::crearBackup() {
-    if (titulares.vacia()) {
-        cout << "\nNo hay titulares registrados para respaldar.\n" << endl;
-        system("pause");
-        return;
-    }
-
-    time_t now = time(0);
-    tm* ltm = localtime(&now);
-    char nombreArchivo[100];
-    sprintf(nombreArchivo, "%04d%02d%02d_%02d%02d%02d.bak",
-        1900 + ltm->tm_year, 1 + ltm->tm_mon, ltm->tm_mday,
-        ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-
-    ofstream archivo(nombreArchivo, ios::binary);
-    if (!archivo) {
-        cout << "\nNo se pudo crear el archivo de respaldo.\n" << endl;
-        system("pause");
-        return;
-    }
-
-    // Funciones auxiliares para strings
-    auto escribirString = [&](const std::string& s) {
-        size_t len = s.size();
-        archivo.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
-        archivo.write(s.c_str(), len);
-    };
-
-    NodoDoble<Titular*>* actual = titulares.getCabeza();
-    if (actual) {
-        do {
-            Titular* t = actual->dato;
-            Persona p = t->getPersona();
-            // Guardar Persona campo por campo
-            escribirString(p.getCI());
-            escribirString(p.getNombre());
-            escribirString(p.getApellido());
-            escribirString(p.getTelefono());
-            escribirString(p.getCorreo());
-
-            // Cuenta corriente
-            CuentaBancaria* c = t->getCuentaCorriente();
-            bool tieneCorriente = c != nullptr;
-            archivo.write(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
-            if (tieneCorriente) {
-                escribirString(c->getID());
-                Fecha fechaCre = c->getFechaCre();
-                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
-                float saldo = c->getSaldo();
-                archivo.write(reinterpret_cast<char*>(&saldo), sizeof(float));
-                escribirString(c->getTipoCuenta());
-
-                // Movimientos
-                ListaDobleCircular<Movimiento*>& movs = c->getMovimientos();
-                int count = 0;
-                NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
-                if (nodoMov) {
-                    NodoDoble<Movimiento*>* temp = nodoMov;
-                    do {
-                        count++;
-                        temp = temp->siguiente;
-                    } while (temp != nodoMov);
-                }
-                archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                if (nodoMov) {
-                    NodoDoble<Movimiento*>* temp = nodoMov;
-                    do {
-                        Movimiento* m = temp->dato;
-                        escribirString(m->getIDMovimiento());
-                        Fecha fechaMov = m->getFechaMov();
-                        archivo.write(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
-                        Hora hora = m->getHora();
-                        archivo.write(reinterpret_cast<char*>(&hora), sizeof(Hora));
-                        float monto = m->getMonto();
-                        archivo.write(reinterpret_cast<char*>(&monto), sizeof(float));
-                        bool tipo = m->getTipo();
-                        archivo.write(reinterpret_cast<char*>(&tipo), sizeof(bool));
-                        int numMov = m->getNumeroMovimiento();
-                        archivo.write(reinterpret_cast<char*>(&numMov), sizeof(int));
-                        temp = temp->siguiente;
-                    } while (temp != nodoMov);
-                }
-            }
-
-            // Cuentas de ahorro
-            int totalAhorros = 0;
-            NodoDoble<CuentaBancaria*>* nodoA = t->getCuentasAhorro().getCabeza();
-            if (nodoA) {
-                NodoDoble<CuentaBancaria*>* temp = nodoA;
-                do { totalAhorros++; temp = temp->siguiente; } while (temp != nodoA);
-            }
-            archivo.write(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
-            if (nodoA) {
-                NodoDoble<CuentaBancaria*>* temp = nodoA;
-                do {
-                    CuentaBancaria* ahorro = temp->dato;
-                    escribirString(ahorro->getID());
-                    Fecha fechaCreAhorro = ahorro->getFechaCre();
-                    archivo.write(reinterpret_cast<char*>(&fechaCreAhorro), sizeof(Fecha));
-                    float saldoAhorro = ahorro->getSaldo();
-                    archivo.write(reinterpret_cast<char*>(&saldoAhorro), sizeof(float));
-                    escribirString(ahorro->getTipoCuenta());
-
-                    // Movimientos
-                    ListaDobleCircular<Movimiento*>& movs = ahorro->getMovimientos();
-                    int count = 0;
-                    NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
-                    if (nodoMov) {
-                        NodoDoble<Movimiento*>* tmp = nodoMov;
-                        do {
-                            count++;
-                            tmp = tmp->siguiente;
-                        } while (tmp != nodoMov);
-                    }
-                    archivo.write(reinterpret_cast<char*>(&count), sizeof(int));
-                    if (nodoMov) {
-                        NodoDoble<Movimiento*>* tmp = nodoMov;
-                        do {
-                            Movimiento* m = tmp->dato;
-                            escribirString(m->getIDMovimiento());
-                            Fecha fechaMov = m->getFechaMov();
-                            archivo.write(reinterpret_cast<char*>(&fechaMov), sizeof(Fecha));
-                            Hora hora = m->getHora();
-                            archivo.write(reinterpret_cast<char*>(&hora), sizeof(Hora));
-                            float monto = m->getMonto();
-                            archivo.write(reinterpret_cast<char*>(&monto), sizeof(float));
-                            bool tipo = m->getTipo();
-                            archivo.write(reinterpret_cast<char*>(&tipo), sizeof(bool));
-                            int numMov = m->getNumeroMovimiento();
-                            archivo.write(reinterpret_cast<char*>(&numMov), sizeof(int));
-                            tmp = tmp->siguiente;
-                        } while (tmp != nodoMov);
-                    }
-                    temp = temp->siguiente;
-                } while (temp != nodoA);
-            }
-            actual = actual->siguiente;
-        } while (actual != titulares.getCabeza());
-    }
-    archivo.close();
-    cout << "\nBackup binario creado exitosamente en '" << nombreArchivo << "'.\n" << endl;
-    system("pause");
+    
 }
 
 void Sistema::mostrarAyuda() {

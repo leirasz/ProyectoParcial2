@@ -87,9 +87,8 @@ NodoDoble<T>* ListaDobleCircular<T>::getCabeza() const {
     return cabeza;
 }
 
-
-/*ListaDobleCircular<T> ListaDobleCircular<T>::getCuentasAhorro() const {
+template <typename T>
+ListaDobleCircular<T> ListaDobleCircular<T>::getCuentasAhorro() const {
     return *this;
-}*/
-
+}
 #endif
