@@ -6,6 +6,7 @@
 #include "ListaDobleCircular.h"
 #include <fstream>
 #include <iostream>
+#include <direct.h>
 using namespace std;
 
 // --- FUNCIONES AUXILIARES PARA STRINGS ---
@@ -44,6 +45,8 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
             escribirString(archivo, p.getApellido());
             escribirString(archivo, p.getTelefono());
             escribirString(archivo, p.getCorreo());
+            Fecha fechaNac = p.getFechaNa();
+            archivo.write(reinterpret_cast<char*>(&fechaNac), sizeof(Fecha));
 
             // Cuenta corriente
             CuentaBancaria* c = t->getCuentaCorriente();
@@ -287,6 +290,8 @@ bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const
 
     while (archivo.peek() != EOF) {
         // Leer Persona
+        Fecha fechaNac;
+        archivo.read(reinterpret_cast<char*>(&fechaNac), sizeof(Fecha));
         std::string ci, nombre, apellido, telefono, correo;
         leerString(archivo, ci);
         leerString(archivo, nombre);
@@ -299,6 +304,7 @@ bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const
         p.setApellido(apellido);
         p.setTelefono(telefono);
         p.setCorreo(correo);
+        p.setFechaNa(fechaNac);
         Titular* t = new Titular(p);
 
         // Leer cuenta corriente

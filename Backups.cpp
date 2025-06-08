@@ -42,6 +42,8 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
             escribirString(p.getApellido());
             escribirString(p.getTelefono());
             escribirString(p.getCorreo());
+            Fecha fechaNac = p.getFechaNa();
+            archivo.write(reinterpret_cast<const char*>(&fechaNac), sizeof(Fecha));
             // Cuenta corriente
             CuentaBancaria* c = t->getCuentaCorriente();
             bool tieneCorriente = c != nullptr;
