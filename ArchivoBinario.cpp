@@ -289,15 +289,15 @@ bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const
     };
 
     while (archivo.peek() != EOF) {
-        // Leer Persona
-        Fecha fechaNac;
-        archivo.read(reinterpret_cast<char*>(&fechaNac), sizeof(Fecha));
+        // Leer Persona (en el mismo orden en que se guardó en el backup)
         std::string ci, nombre, apellido, telefono, correo;
         leerString(archivo, ci);
         leerString(archivo, nombre);
         leerString(archivo, apellido);
         leerString(archivo, telefono);
         leerString(archivo, correo);
+        Fecha fechaNac;
+        archivo.read(reinterpret_cast<char*>(&fechaNac), sizeof(Fecha));
         Persona p;
         p.setCI(ci);
         p.setNombre(nombre);
