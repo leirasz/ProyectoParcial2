@@ -31,13 +31,153 @@ Sistema::~Sistema() {
         } while (actual != titulares.getCabeza());
     }
 }
+void Sistema::generarPDFTitulares() {
+    system("cls");
+    cout << "\n--- GENERAR PDF DE TITULARES ---\n" << endl;
 
+    // Open the input text file
+    ifstream archivo("titulares.txt");
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo 'titulares.txt'.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    // Output PDF file
+    string outputFile = "titulares.pdf";
+    ofstream pdf(outputFile, ios::binary);
+    if (!pdf) {
+        cout << "\nNo se pudo crear el archivo PDF.\n" << endl;
+        archivo.close();
+        system("pause");
+        return;
+    }
+
+    // Write PDF header
+    pdf << "%PDF-1.4\n";
+
+    // Object 1: Catalog
+    pdf << "1 0 obj\n"
+        << "<< /Type /Catalog /Pages 2 0 R >>\n"
+        << "endobj\n";
+
+    // Object 2: Pages
+    pdf << "2 0 obj\n"
+        << "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
+        << "endobj\n";
+
+    // Object 3: Page
+    pdf << "3 0 obj\n"
+        << "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\n"
+        << "endobj\n";
+
+    // Object 4: Font
+    pdf << "4 0 obj\n"
+        << "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n"
+        << "endobj\n";
+
+    // Object 5: Content stream
+    stringstream contenido;
+    contenido << "5 0 obj\n"
+              << "<< /Length " << /* Length placeholder */ " >>\n"
+              << "stream\n"
+              << "BT\n"
+              << "/F1 12 Tf\n"
+              << "1 0 0 1 50 792 Tm\n" // Set text matrix (start at top-left, 50,792)
+              << "(Listado de Titulares) Tj\n";
+
+    // Adjust text position
+    float yPos = 772; // Start below the title
+    const float lineSpacing = 14; // Space between lines
+    const float pageBottom = 50; // Bottom margin
+    const float pageHeight = 842; // A4 height in points
+
+    // Read the text file line by line
+    string linea;
+    while (getline(archivo, linea)) {
+        // Check if we need a new page (simple pagination)
+        if (yPos < pageBottom) {
+            contenido << "ET\n"
+                      << "endstream\n"
+                      << "endobj\n";
+            // Update length and write current content
+            string contenidoStr = contenido.str();
+            string longitud = to_string(contenidoStr.size() - string("5 0 obj\n<< /Length  >> stream\n").size() - string("endstream\nendobj\n").size());
+            contenidoStr.replace(contenidoStr.find("/Length ") + 8, 0, longitud);
+            pdf << contenidoStr;
+
+            // Start a new page (simplified: new content stream)
+            contenido.str(""); // Clear stream
+            yPos = 792; // Reset Y position
+            contenido << "5 0 obj\n"
+                      << "<< /Length " << /* Length placeholder */ " >>\n"
+                      << "stream\n"
+                      << "BT\n"
+                      << "/F1 12 Tf\n"
+                      << "1 0 0 1 50 792 Tm\n";
+        }
+
+        // Escape special characters for PDF
+        string escapedLine = linea;
+        for (size_t i = 0; i < escapedLine.size(); ++i) {
+            if (escapedLine[i] == '(' || escapedLine[i] == ')' || escapedLine[i] == '\\') {
+                escapedLine.insert(i, "\\");
+                ++i;
+            }
+        }
+
+        // Write line to PDF
+        contenido << "0 -" << lineSpacing << " Td\n"
+                  << "(" << escapedLine << ") Tj\n";
+        yPos -= lineSpacing;
+    }
+
+    contenido << "ET\n"
+              << "endstream\n"
+              << "endobj\n";
+
+    // Update content length
+    string contenidoStr = contenido.str();
+    string longitud = to_string(contenidoStr.size() - string("5 0 obj\n<< /Length  >> stream\n").size() - string("endstream\nendobj\n").size());
+    contenidoStr.replace(contenidoStr.find("/Length ") + 8, 0, longitud);
+    pdf << contenidoStr;
+
+    // Cross-reference table
+    pdf << "xref\n"
+        << "0 6\n"
+        << "0000000000 65535 f \n";
+    stringstream xref;
+    xref << setfill('0') << setw(10);
+    size_t offset = 9; // Length of "%PDF-1.4\n"
+    xref << offset << " 00000 n \n";
+    offset += string("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    pdf << xref.str();
+
+    // Trailer
+    pdf << "trailer\n"
+        << "<< /Size 6 /Root 1 0 R >>\n"
+        << "startxref\n"
+        << offset << "\n"
+        << "%%EOF\n";
+
+    pdf.close();
+    archivo.close();
+    cout << "\nPDF generado exitosamente: " << outputFile << "\n" << endl;
+    system("pause");
+}
 void Sistema::menuPrincipal() {
     const char* opciones[] = {
         "Registrar titular",
         "Crear cuenta",
         "Realizar deposito",
-        "Realizar retiro",        
+        "Realizar retiro",
         "Buscar movimientos por fecha",
         "Buscar titular por datos",
         "Busqueda personalizada",
@@ -48,12 +188,14 @@ void Sistema::menuPrincipal() {
         "Verificar integridad de archivo TXT",
         "Mostrar tabla hash",
         "Mostrar ayuda",
+        "Generar codigo QR en PDF",
+        "Generar PDF de titulares", // Nueva opción
         "Salir"
     };
     Menu menu;
     int opcion;
     do {
-        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 15);
+        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 17); // Update to 17 options
         switch(opcion) {
             case 1: registrarTitular(); break;
             case 2: crearCuenta(); break;
@@ -65,8 +207,8 @@ void Sistema::menuPrincipal() {
             case 8: menuBB(); break;
             case 9: menuSecundario(); break;
             case 10: menuArbol(); break;
-            case 11: guardarTitularesEnTxt();break;
-            case 12:  {
+            case 11: guardarTitularesEnTxt(); break;
+            case 12: {
                 system("cls");
                 cout << "\n--- VERIFICAR INTEGRIDAD DE ARCHIVO TXT ---" << endl;
                 cout << "Esto compara el hash MD5 actual del archivo con el hash almacenado en la tabla hash.\n";
@@ -87,10 +229,294 @@ void Sistema::menuPrincipal() {
                 break;
             }
             case 14: mostrarAyuda(); break;
-            case 15: cout << "\nSaliendo...\n" << endl; break;
+            case 15: generarQRPDF(); break;
+            case 16: generarPDFTitulares(); break; // Nueva opción
+            case 17: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
-    } while(opcion != 15);
+    } while(opcion != 17);
+}
+// Generar código QR básico (versión 1, 21x21)
+void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
+    // Inicializar la matriz QR
+    for (int i = 0; i < 21; ++i) {
+        for (int j = 0; j < 21; ++j) {
+            qrMatrix[i][j] = false;
+        }
+    }
+
+    // Patrones fijos (finder patterns) en las esquinas
+    auto dibujarFinderPattern = [&](int startX, int startY) {
+        // Cuadrado exterior 7x7
+        for (int i = 0; i < 7; ++i) {
+            qrMatrix[startX][startY + i] = true;
+            qrMatrix[startX + 6][startY + i] = true;
+            qrMatrix[startX + i][startY] = true;
+            qrMatrix[startX + i][startY + 6] = true;
+        }
+        // Cuadrado interior 5x5 (blanco)
+        for (int i = 1; i < 6; ++i) {
+            for (int j = 1; j < 6; ++j) {
+                qrMatrix[startX + i][startY + j] = false;
+            }
+        }
+        // Cuadrado central 3x3
+        for (int i = 2; i < 5; ++i) {
+            for (int j = 2; j < 5; ++j) {
+                qrMatrix[startX + i][startY + j] = true;
+            }
+        }
+    };
+
+    dibujarFinderPattern(0, 0);   // Superior izquierda
+    dibujarFinderPattern(0, 14);  // Superior derecha
+    dibujarFinderPattern(14, 0);  // Inferior izquierda
+
+    // Líneas de temporización
+    for (int i = 8; i < 13; ++i) {
+        qrMatrix[6][i] = (i % 2 == 0);
+        qrMatrix[i][6] = (i % 2 == 0);
+    }
+
+    // Codificación de datos (modo alfanumérico simplificado)
+    const string alfanumerico = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+    auto getCharValue = [&](char c) -> int {
+        for (size_t i = 0; i < alfanumerico.size(); ++i) {
+            if (toupper(c) == alfanumerico[i]) return i;
+        }
+        return -1;
+    };
+
+    vector<int> valores;
+    string truncatedData = data.substr(0, 25); // Limitar a 25 caracteres
+    for (char c : truncatedData) {
+        int val = getCharValue(c);
+        if (val != -1) valores.push_back(val);
+    }
+
+    // Codificar en modo alfanumérico
+    vector<bool> bits;
+    bits.insert(bits.end(), {0, 0, 1, 0}); // Modo alfanumérico: 0010
+    int len = valores.size();
+    for (int i = 7; i >= 0; --i) {
+        bits.push_back((len >> i) & 1);
+    }
+    for (size_t i = 0; i < valores.size(); i += 2) {
+        int val1 = valores[i];
+        int val2 = (i + 1 < valores.size()) ? valores[i + 1] : 0;
+        int combined = val1 * 45 + val2;
+        for (int j = 10; j >= 0; --j) {
+            bits.push_back((combined >> j) & 1);
+        }
+    }
+    while (bits.size() < 208) {
+        bits.push_back(0);
+    }
+
+    // Colocar datos en la matriz (patrón en zigzag simplificado)
+    int bitIndex = 0;
+    for (int col = 20; col >= 0 && bitIndex < bits.size(); col -= 2) {
+        if (col == 6) continue;
+        for (int row = 20; row >= 0 && bitIndex < bits.size(); --row) {
+            if (qrMatrix[row][col] == false) {
+                qrMatrix[row][col] = bits[bitIndex++];
+            }
+            if (col - 1 >= 0 && qrMatrix[row][col - 1] == false) {
+                qrMatrix[row][col - 1] = bitIndex < bits.size() ? bits[bitIndex++] : false;
+            }
+        }
+        col--;
+        if (col < 0) break;
+        if (col == 6) col--;
+        for (int row = 0; row < 21 && bitIndex < bits.size(); ++row) {
+            if (qrMatrix[row][col] == false) {
+                qrMatrix[row][col] = bits[bitIndex++];
+            }
+            if (col - 1 >= 0 && qrMatrix[row][col - 1] == false) {
+                qrMatrix[row][col - 1] = bitIndex < bits.size() ? bits[bitIndex++] : false;
+            }
+        }
+    }
+}
+
+// Generar archivo PDF
+void Sistema::generarPDF(const std::string& nombre, const std::string& numeroCuenta, bool qrMatrix[21][21], const std::string& outputFile) {
+    ofstream archivo(outputFile, ios::binary);
+    if (!archivo) {
+        cout << "\nNo se pudo crear el archivo PDF.\n" << endl;
+        return;
+    }
+
+    // Escribir el encabezado del PDF
+    archivo << "%PDF-1.4\n";
+
+    // Objeto 1: Catálogo
+    archivo << "1 0 obj\n"
+            << "<< /Type /Catalog /Pages 2 0 R >>\n"
+            << "endobj\n";
+
+    // Objeto 2: Página
+    archivo << "2 0 obj\n"
+            << "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
+            << "endobj\n";
+
+    // Objeto 3: Contenido de la página
+    archivo << "3 0 obj\n"
+            << "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\n"
+            << "endobj\n";
+
+    // Objeto 4: Fuente
+    archivo << "4 0 obj\n"
+            << "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n"
+            << "endobj\n";
+
+    // Objeto 5: Contenido de la página
+    stringstream contenido;
+    contenido << "5 0 obj\n"
+              << "<< /Length " << /* longitud se calculará después */ " >>\n"
+              << "stream\n"
+              << "BT\n"
+              << "/F1 12 Tf\n"
+              << "100 750 Td\n"
+              << "(Código QR - Información de Cuenta Bancaria) Tj\n"
+              << "100 730 Td\n"
+              << "(Titular: " << nombre << ") Tj\n"
+              << "100 710 Td\n"
+              << "(Nº Cuenta: " << numeroCuenta << ") Tj\n"
+              << "ET\n";
+
+    // Dibujar el código QR (10x10 puntos por módulo)
+    float xBase = 100, yBase = 600;
+    float moduleSize = 10;
+    for (int i = 0; i < 21; ++i) {
+        for (int j = 0; j < 21; ++j) {
+            if (qrMatrix[i][j]) {
+                float x = xBase + j * moduleSize;
+                float y = yBase - i * moduleSize; // Invertir Y para PDF
+                contenido << "q\n"
+                          << "0 0 0 rg\n"
+                          << x << " " << (y - moduleSize) << " " << moduleSize << " " << moduleSize << " re\n"
+                          << "f\n"
+                          << "Q\n";
+            }
+        }
+    }
+
+    string contenidoStr = contenido.str();
+    contenidoStr += "endstream\nendobj\n";
+
+    // Actualizar la longitud del contenido
+    string longitud = to_string(contenidoStr.size() - string("5 0 obj\n<< /Length  >> stream\n").size() - string("endstream\nendobj\n").size());
+    contenidoStr.replace(contenidoStr.find("/Length ") + 8, 0, longitud);
+
+    archivo << contenidoStr;
+
+    // Cross-reference table
+    archivo << "xref\n"
+            << "0 6\n"
+            << "0000000000 65535 f \n";
+    stringstream xref;
+    xref << setfill('0') << setw(10);
+    size_t offset = 9; // Longitud de "%PDF-1.4\n"
+    xref << offset << " 00000 n \n";
+    offset += string("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    offset += string("4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n").size();
+    xref << offset << " 00000 n \n";
+    archivo << xref.str();
+
+    // Trailer
+    archivo << "trailer\n"
+            << "<< /Size 6 /Root 1 0 R >>\n"
+            << "startxref\n"
+            << offset << "\n"
+            << "%%EOF\n";
+
+    archivo.close();
+    cout << "\nPDF generado exitosamente: " << outputFile << "\n" << endl;
+}
+
+// Generar código QR en PDF
+void Sistema::generarQRPDF() {
+    system("cls");
+    cout << "\n--- GENERAR CÓDIGO QR EN PDF ---\n" << endl;
+
+    if (titulares.vacia()) {
+        cout << "\nNo hay titulares registrados.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    string cedula = val.ingresarCedula("\nIngrese cedula del titular:");
+    Titular* titular = buscarTitularPorCI(cedula);
+    if (!titular) {
+        cout << "\nTitular no encontrado.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    if (!titular->getCuentaCorriente() && titular->getCuentasAhorro().vacia()) {
+        cout << "\nEl titular no tiene cuentas registradas.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    string tipo = val.ingresarCadena("\nTipo de cuenta (Corriente/Ahorro):");
+    for (char& c : tipo) c = toupper(c);
+    CuentaBancaria* cuenta = nullptr;
+    string idCuenta = val.ingresarNumeros("\nIngrese ID de la cuenta:");
+
+    if (tipo == "CORRIENTE") {
+        cuenta = titular->getCuentaCorriente();
+        if (!cuenta || cuenta->getID() != idCuenta) {
+            cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
+            system("pause");
+            return;
+        }
+    } else if (tipo == "AHORRO") {
+        NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
+        if (actual) {
+            do {
+                if (actual->dato->getID() == idCuenta) {
+                    cuenta = actual->dato;
+                    break;
+                }
+                actual = actual->siguiente;
+            } while (actual != titular->getCuentasAhorro().getCabeza());
+        }
+        if (!cuenta) {
+            cout << "\nCuenta de ahorro no encontrada.\n" << endl;
+            system("pause");
+            return;
+        }
+    } else {
+        cout << "\nTipo de cuenta no valido.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    // Generar el texto para el QR
+    string nombre = titular->getPersona().getNombre() + " " + titular->getPersona().getApellido();
+    string numeroCuenta = cuenta->getID();
+    string qrData = "Titular: " + nombre + ", Cuenta: " + numeroCuenta;
+    if (qrData.size() > 25) {
+        qrData = qrData.substr(0, 25); // Limitar a 25 caracteres
+        cout << "\nAdvertencia: Los datos fueron truncados a 25 caracteres para el código QR.\n";
+    }
+
+    // Generar la matriz QR
+    bool qrMatrix[21][21];
+    generarQR(qrData, qrMatrix);
+
+    // Generar el PDF
+    string outputFile = "qr_" + cedula + ".pdf";
+    generarPDF(nombre, numeroCuenta, qrMatrix, outputFile);
+
+    system("pause");
 }
 void Sistema::menuArbol(){
     const char* opciones[] = {
@@ -188,11 +614,11 @@ void Sistema::menuSecundario(){
             case 3: decifrarArchivoCifrado(); break;
             case 4: { // Restaurar backup
                 system("cls");
-                cout << "--- RESTAURAR BACKUP ---" << endl;
+                cout << "/n--- RESTAURAR BACKUP ---/n" << endl;
                 string archivo = val.ingresarCodigoBak((char*)"Ingrese el nombre del archivo de backup (ejemplo: 20240601_153000.bak):");
                 Backups backup;
                 
-                if (backup.restaurarBackup(titulares, archivo)) {
+                if (backup.restaurarBackup(titulares, arbolTitulares,archivo)) {
                     actualizarContadoresSucursales();
                 }
                 break;
@@ -1020,12 +1446,11 @@ void Sistema::menuBB() {
         "Buscar titular por CI",
         "Buscar titular por anio de nacimiento ",
         "Buscar sucursal mas cercana",
-        "Buscar tiempo minimo entre usuarios",
         "Regresar al menu principal"
     };
     int opcion;
     do {
-        opcion = menu.ingresarMenu("BUSQUEDAS BINARIAS", opciones, 7);
+        opcion = menu.ingresarMenu("BUSQUEDAS BINARIAS", opciones, 6);
         switch(opcion) {
             case 1: {
                 // Buscar primer deposito mayor o igual a un monto
@@ -1170,15 +1595,15 @@ void Sistema::menuBB() {
                     // Mostrar cita generada
                     cout << "\nCita generada exitosamente:\n";
                     cout << "Sucursal: " << sucursal->getNombre() << endl;
-                    cout << "Fecha: " << cita.obtenerFecha() << endl;
-                    cout << "Hora: " << cita.obtenerHora() << endl;
+                    cout << "FechaDeGeneracionDeCita: " << cita.obtenerFecha() << endl;
+                    cout << "HoraDeGeneracionDeCita: " << cita.obtenerHora() << endl;
                  } else {
                     cout << "No se encontraron sucursales.\n";
                 }
                 system("pause");
                 break;
                 }  
-            case 6: {
+            /*case 6: {
                 cout << "\n--- Calcular intervalo maximo entre citas ---\n";
                             cout << " Esta funcion calcula el maximo intervalo de tiempo (en minutos) entre citas consecutivas para programar un numero dado de clientes.\n";
                             int nClientes;
@@ -1201,12 +1626,12 @@ void Sistema::menuBB() {
                                 system("pause");
                                 break;
                             }
-                            if (!sucursales.getCabeza()) {
+                            if (!listaSucursales.getCabeza()) {
                                 cout << "No hay sucursales disponibles.\n";
                                 system("pause");
                                 break;
                             }
-                            int maxD = buscador.maximoIntervaloCitas(sucursales.getCabeza(), nClientes, duracionCita);
+                            int maxD = buscador.maximoIntervaloCitas(listaSucursales.getCabeza(), nClientes, duracionCita);
                             if (maxD == 0) {
                                 cout << "No es posible programar las citas con los datos proporcionados.\n";
                             } else {
@@ -1215,13 +1640,13 @@ void Sistema::menuBB() {
                             system("pause");
                             break;
 }
-            case 7:
+           */ case 6:
                 cout << "\nRegresando al menu principal...\n";
                 break;
             default:
                 cout << "\nOpcion invalida.\n"; system("pause"); break;
         }
-        }while(opcion != 7);
+        }while(opcion != 6);
     }
 void Sistema::guardarTitularesEnTxt() {
     system("cls");

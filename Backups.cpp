@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ctime>
 #include "ArchivoBinario.h"
+#include "BPlusTreeTitulares.h"
 
 void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
     if (titulares.vacia()) {
@@ -148,7 +149,7 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
     system("pause");
 }
 
-bool Backups::restaurarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& archivo) {
+bool Backups::restaurarBackup(ListaDobleCircular<Titular*>& titulares, BPlusTreeTitulares& arbolTitulares,const std::string& archivo) {
     // Elimina todos los titulares actuales
     
     while (!titulares.vacia()) {
@@ -156,9 +157,14 @@ bool Backups::restaurarBackup(ListaDobleCircular<Titular*>& titulares, const std
         delete t;
     }
     // Carga desde el archivo de backup
+    arbolTitulares=BPlusTreeTitulares();
+    
     bool exito = ArchivoBinario::cargarBackup(titulares, archivo);
     if (exito) {
+        arbolTitulares.construirDesdeLista(titulares.getCabeza());
         std::cout << "\nBackup restaurado correctamente desde '" << archivo << "'.\n" << std::endl;
+        std::cout << "\nARBOL B+ DESPUES DE LA RESTAURACION \n"; 
+        arbolTitulares.imprimir();
     } else {
         std::cout << "\nNo se pudo restaurar el backup desde '" << archivo << "'.\n" << std::endl;
     }

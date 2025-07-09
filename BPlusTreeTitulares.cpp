@@ -36,7 +36,7 @@ void BPlusTreeTitulares::insertar(const std::string& ci, Titular* titular) {
         nuevaRaiz->numClaves = 1;
         raiz = nuevaRaiz;
     }
-    imprimir(); // Imprimir después de cada inserción para verificar
+     // Imprimir después de cada inserción para verificar
 }
 
 void BPlusTreeTitulares::insertarEnNodo(NodoBPlus* nodo, const std::string& ci, Titular* titular, NodoBPlus*& nuevoHijo, std::string& nuevaClave) {

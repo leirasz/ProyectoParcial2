@@ -245,7 +245,7 @@ public:
         
         // Búsqueda binaria para encontrar el máximo D
         int left = 1; // Mínimo intervalo posible
-        int right = 1440; // Máximo intervalo (24 horas en minutos)
+        int right = 540; // Máximo intervalo (24 horas en minutos)
         int maxD = 0;
         
         while (left <= right) {

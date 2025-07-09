@@ -7,7 +7,8 @@
 #include "ListaSucursales.h"
 #include "BPlusTreeTitulares.h"
 #include "TablaHash.h"
-//#include <SFML/Graphics.hpp>
+#include <vector>
+#include <string>
 
 class Sistema {
 private:
@@ -16,21 +17,28 @@ private:
     BPlusTreeTitulares arbolTitulares;
     ListaSucursales listaSucursales;
     TablaHash hashes;
+
+    Titular* buscarTitularPorCI(const std::string& cedula);
+    void actualizarContadoresSucursales();
+    std::string generarHashMD5(const std::string& nombreArchivo);
+    bool compararHashArchivo(const std::string& nombreArchivo);
+    // Nuevas funciones para generar el código QR y el PDF
+    void generarQR(const std::string& data, bool qrMatrix[21][21]);
+    void generarPDF(const std::string& nombre, const std::string& numeroCuenta, bool qrMatrix[21][21], const std::string& outputFile);
+
 public:
     Sistema();
     ~Sistema();
 
     void menuPrincipal();
-
     void registrarTitular();
     void crearCuenta();
     void realizarDeposito();
     void realizarRetiro();
-
     void buscarMovimientosPorFecha();
+    void generarPDFTitulares();
     void buscarPorTitular();
     void buscarPersonalizada();
-    Titular* buscarTitularPorCI(const std::string& cedula);
     void crearBackup();
     void mostrarAyuda();
     void menuSecundario();
@@ -38,13 +46,11 @@ public:
     void guardarArchivoBinCifrado();
     void guardarArchivoBinSinCifrar();
     void decifrarArchivoCifrado();
-    void actualizarContadoresSucursales();
-    //void graficarArbol();
     void busquedasBinarias();
     void menuBB();
     void guardarTitularesEnTxt();
-    std::string generarHashMD5(const std::string& nombreArchivo);
-    bool compararHashArchivo(const std::string& nombreArchivo);
+    // Nueva función para generar el QR en PDF
+    void generarQRPDF();
 };
 
 #endif

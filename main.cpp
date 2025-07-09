@@ -3,7 +3,7 @@
 
 int main() {
     Marquesina marquesina;
-    marquesina.iniciar("TU SISTEMA BANCARIO PREFERIDO");
+    marquesina.iniciar("BIENVENIDOS A MICHIBANK");
 
     Sistema sistema;
     sistema.menuPrincipal();
