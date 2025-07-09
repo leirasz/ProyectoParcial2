@@ -2,7 +2,7 @@
 #define CUENTABANCARIA_H
 
 #include <string>
-#include "Fecha.h"
+#include "FechaHora.h"
 #include "Movimiento.h"
 #include "ListaDobleCircular.h"
   // Clase individual de movimiento
@@ -10,12 +10,13 @@
 class CuentaBancaria {
 private:
     std::string ID;
-    Fecha fechaCre;
+    FechaHora fechaCre;
     float saldo;
     std::string tipoCuenta;  // Ahorros o Corriente
     ListaDobleCircular<Movimiento*> movimientos;
 
 public:
+    CuentaBancaria(const std::string& sucursalID);
     CuentaBancaria();
     ~CuentaBancaria();
 
@@ -23,8 +24,8 @@ public:
     std::string getID() const;
     void setID(const std::string& newID);
 
-    Fecha getFechaCre() const;
-    void setFechaCre(const Fecha& newFechaCre);
+    FechaHora getFechaCre() const;
+    void setFechaCre(const FechaHora& newFechaCre);
 
     float getSaldo() const;
     void setSaldo(float newSaldo);
@@ -36,7 +37,10 @@ public:
     ListaDobleCircular<Movimiento*>& getMovimientos();
     const ListaDobleCircular<Movimiento*>& getMovimientos() const;
 
-    void generarID();
+    void generarID(const std::string& sucursalID);  // Método para generar el ID de la cuenta
+
+    // Método para calcular el dígito verificador
+    char calcularDigitoVerificador(const std::string& cuenta);
     void imprimirMovimientos();
     void imprimir();
 };

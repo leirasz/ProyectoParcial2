@@ -54,8 +54,8 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
             archivo.write(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
             if (tieneCorriente) {
                 escribirString(archivo, c->getID());
-                Fecha fechaCre = c->getFechaCre();
-                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+                FechaHora fechaCre = c->getFechaCre();
+                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
                 float saldo = c->getSaldo();
                 archivo.write(reinterpret_cast<char*>(&saldo), sizeof(float));
                 escribirString(archivo, c->getTipoCuenta());
@@ -109,7 +109,7 @@ void ArchivoBinario::guardar(const ListaDobleCircular<Titular*>& titulares, cons
                 do {
                     CuentaBancaria* ahorro = temp->dato;
                     escribirString(archivo, ahorro->getID());
-                    Fecha fechaCreAhorro = ahorro->getFechaCre();
+                    FechaHora fechaCreAhorro = ahorro->getFechaCre();
                     archivo.write(reinterpret_cast<char*>(&fechaCreAhorro), sizeof(Fecha));
                     float saldoAhorro = ahorro->getSaldo();
                     archivo.write(reinterpret_cast<char*>(&saldoAhorro), sizeof(float));
@@ -184,10 +184,10 @@ void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::
         archivo.read(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
         if (tieneCorriente) {
             std::string id, tipoCuenta;
-            Fecha fechaCre;
+            FechaHora fechaCre;
             float saldo;
             leerString(archivo, id);
-            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
             archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
             leerString(archivo, tipoCuenta);
 
@@ -227,10 +227,10 @@ void ArchivoBinario::cargar(ListaDobleCircular<Titular*>& titulares, const std::
         archivo.read(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
         for (int i = 0; i < totalAhorros; ++i) {
             std::string id, tipoCuenta;
-            Fecha fechaCre;
+            FechaHora fechaCre;
             float saldo;
             leerString(archivo, id);
-            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
             archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
             leerString(archivo, tipoCuenta);
 
@@ -312,10 +312,10 @@ bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const
         archivo.read(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
         if (tieneCorriente) {
             std::string id, tipoCuenta;
-            Fecha fechaCre;
+            FechaHora fechaCre;
             float saldo;
             leerString(archivo, id);
-            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
             archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
             leerString(archivo, tipoCuenta);
 
@@ -355,10 +355,10 @@ bool ArchivoBinario::cargarBackup(ListaDobleCircular<Titular*>& titulares, const
         archivo.read(reinterpret_cast<char*>(&totalAhorros), sizeof(int));
         for (int i = 0; i < totalAhorros; ++i) {
             std::string id, tipoCuenta;
-            Fecha fechaCre;
+            FechaHora fechaCre;
             float saldo;
             leerString(archivo, id);
-            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+            archivo.read(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
             archivo.read(reinterpret_cast<char*>(&saldo), sizeof(float));
             leerString(archivo, tipoCuenta);
 

@@ -404,3 +404,35 @@ string Validaciones::ingresarTextoLibre(char msj[50]) {
     } while (i == 0);
     return string(dato);
 }
+
+string Validaciones::ingresarCodigoSucursal(char msj[50]) {
+    char c;
+    int i = 0;
+    char codigo[4]; // Ajusta el tamaño según la longitud máxima de tu código
+    
+    do {
+        
+        i = 0;
+        cout << msj << endl;
+
+        while ((c = getch()) != 13) { // Enter
+            if (isdigit(c)) { // Solo dígitos
+                if (i < 3) {
+                    codigo[i++] = c;
+                    cout << c;
+                }
+            } else if (c == 8 && i > 0) { // Backspace
+                i--;
+                cout << "\b \b";
+            }
+        }
+        codigo[i] = '\0';
+
+        if (i != 3) { // Debe tener exactamente 3 caracteres
+            cout << "\nCodigo invalido. Debe tener exactamente 3 digitos numericos.\n";
+            system("pause");
+        } else {
+            return string(codigo);
+        }
+    } while (true);
+}

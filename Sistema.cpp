@@ -11,7 +11,11 @@
 #include <iostream>
 using namespace std;
 
-Sistema::Sistema() {}
+Sistema::Sistema() {
+    listaSucursales.agregarSucursal(Sucursal("Sucursal Central", -34.6037, -58.3816, "123"));
+    listaSucursales.agregarSucursal(Sucursal("Sucursal Norte", -34.7000, -58.3000, "456"));
+    listaSucursales.agregarSucursal(Sucursal("Sucursal Sur", -34.8000, -58.4000, "789"));
+}
 
 Sistema::~Sistema() {
     NodoDoble<Titular*>* actual = titulares.getCabeza();
@@ -76,7 +80,10 @@ void Sistema::menuSecundario(){
                 cout << "--- RESTAURAR BACKUP ---" << endl;
                 string archivo = val.ingresarCodigoBak((char*)"Ingrese el nombre del archivo de backup (ejemplo: 20240601_153000.bak):");
                 Backups backup;
-                backup.restaurarBackup(titulares, archivo);
+                
+                if (backup.restaurarBackup(titulares, archivo)) {
+                    actualizarContadoresSucursales();
+                }
                 break;
             }
             case 5: cout << "\nRegresando al menu principal...\n" << endl; break;
@@ -168,12 +175,26 @@ void Sistema::crearCuenta() {
         system("pause");
         return;
     }
-
+    cout << "\nSeleccione la sucursal para la cuenta:\n";
+    listaSucursales.mostrarSucursales();
+    string idSucursal = val.ingresarCodigoSucursal((char*)"\nIngrese el ID de la sucursal: ");
+    if (!listaSucursales.existeSucursal(idSucursal)) {
+        cout << "\nSucursal no encontrada." << endl;
+        system("pause");
+        return;
+    }
+    NodoSucursal* nodo = listaSucursales.getCabeza();
+    while (nodo != nullptr) {
+        if (nodo->sucursal.getIdSucursal() == idSucursal) {
+            nodo->sucursal.incrementarContadorCuentas();
+            break;
+        }
+        nodo = nodo->siguiente;
+    }
     string tipo = val.ingresarCadena((char*)"\nIngrese tipo de cuenta (Corriente/Ahorro): ");
-    CuentaBancaria* nuevaCuenta = new CuentaBancaria();
+    CuentaBancaria* nuevaCuenta = new CuentaBancaria(idSucursal);
     for (char& c : tipo) c = toupper(c);
     nuevaCuenta->setTipoCuenta(tipo);
-    nuevaCuenta->generarID();
 
     if (tipo == "CORRIENTE") {
         if (titular->getCuentaCorriente() != nullptr) {
@@ -745,4 +766,54 @@ void Sistema::mostrarAyuda() {
     // Abre el archivo CHM con la aplicación predeterminada en Windows
     system("start Ayuda-CuentasBancarias.chm");
     system("pause");
+}
+
+// Supón que tienes: titulares (ListaDobleCircular<Titular*>&) y listaSucursales (ListaSucursales&)
+void Sistema::actualizarContadoresSucursales() {
+    // Reinicia todos los contadores
+    NodoSucursal* nodoSuc = listaSucursales.getCabeza();
+    while (nodoSuc != nullptr) {
+        nodoSuc->sucursal.setContadorCuentas(0); // Debes tener este setter
+        nodoSuc = nodoSuc->siguiente;
+    }
+
+    // Recorre titulares y cuentas
+    NodoDoble<Titular*>* actual = titulares.getCabeza();
+    if (actual) {
+        do {
+            Titular* t = actual->dato;
+            // Cuenta corriente
+            CuentaBancaria* c = t->getCuentaCorriente();
+            if (c) {
+                std::string idSucursal = c->getID().substr(0, 3); // Ajusta si tu ID es diferente
+                NodoSucursal* nodo = listaSucursales.getCabeza();
+                while (nodo != nullptr) {
+                    if (nodo->sucursal.getIdSucursal() == idSucursal) {
+                        nodo->sucursal.incrementarContadorCuentas();
+                        break;
+                    }
+                    nodo = nodo->siguiente;
+                }
+            }
+            // Cuentas de ahorro
+            NodoDoble<CuentaBancaria*>* nodoA = t->getCuentasAhorro().getCabeza();
+            if (nodoA) {
+                NodoDoble<CuentaBancaria*>* temp = nodoA;
+                do {
+                    CuentaBancaria* ahorro = temp->dato;
+                    std::string idSucursal = ahorro->getID().substr(0, 3);
+                    NodoSucursal* nodo = listaSucursales.getCabeza();
+                    while (nodo != nullptr) {
+                        if (nodo->sucursal.getIdSucursal() == idSucursal) {
+                            nodo->sucursal.incrementarContadorCuentas();
+                            break;
+                        }
+                        nodo = nodo->siguiente;
+                    }
+                    temp = temp->siguiente;
+                } while (temp != nodoA);
+            }
+            actual = actual->siguiente;
+        } while (actual != titulares.getCabeza());
+    }
 }

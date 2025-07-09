@@ -4,11 +4,13 @@
 #include "Titular.h"
 #include "Validaciones.h"
 #include "ListaDobleCircular.h"
+#include "ListaSucursales.h"
 
 class Sistema {
 private:
     ListaDobleCircular<Titular*> titulares;
     Validaciones val;
+    ListaSucursales listaSucursales;
 
 public:
     Sistema();
@@ -31,6 +33,7 @@ public:
     void guardarArchivoBinCifrado();
     void guardarArchivoBinSinCifrar();
     void decifrarArchivoCifrado();
+    void actualizarContadoresSucursales();
 };
 
 #endif

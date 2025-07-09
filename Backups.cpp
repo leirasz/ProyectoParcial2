@@ -50,8 +50,8 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
             archivo.write(reinterpret_cast<char*>(&tieneCorriente), sizeof(bool));
             if (tieneCorriente) {
                 escribirString(c->getID());
-                Fecha fechaCre = c->getFechaCre();
-                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(Fecha));
+                FechaHora fechaCre = c->getFechaCre();
+                archivo.write(reinterpret_cast<char*>(&fechaCre), sizeof(FechaHora));
                 float saldo = c->getSaldo();
                 archivo.write(reinterpret_cast<char*>(&saldo), sizeof(float));
                 escribirString(c->getTipoCuenta());
@@ -101,8 +101,8 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
                 do {
                     CuentaBancaria* ahorro = temp->dato;
                     escribirString(ahorro->getID());
-                    Fecha fechaCreAhorro = ahorro->getFechaCre();
-                    archivo.write(reinterpret_cast<char*>(&fechaCreAhorro), sizeof(Fecha));
+                    FechaHora fechaCreAhorro = ahorro->getFechaCre();
+                    archivo.write(reinterpret_cast<char*>(&fechaCreAhorro), sizeof(FechaHora));
                     float saldoAhorro = ahorro->getSaldo();
                     archivo.write(reinterpret_cast<char*>(&saldoAhorro), sizeof(float));
                     escribirString(ahorro->getTipoCuenta());
@@ -150,6 +150,7 @@ void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
 
 bool Backups::restaurarBackup(ListaDobleCircular<Titular*>& titulares, const std::string& archivo) {
     // Elimina todos los titulares actuales
+    
     while (!titulares.vacia()) {
         Titular* t = titulares.eliminarPorCabeza();
         delete t;

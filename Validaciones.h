@@ -22,6 +22,7 @@ public:
     bool validarDigitoVerificador(string cedula);
     string ingresarTextoLibre(char msj[50]);
     string ingresarCodigoBak(char msj[50]);
+    string ingresarCodigoSucursal(char msj[50]);
 };
 
 #endif
