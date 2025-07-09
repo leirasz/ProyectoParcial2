@@ -5,11 +5,13 @@
 #include "Validaciones.h"
 #include "ListaDobleCircular.h"
 #include "ListaSucursales.h"
+#include "BPlusTreeTitulares.h"
 
 class Sistema {
 private:
     ListaDobleCircular<Titular*> titulares;
     Validaciones val;
+    BPlusTreeTitulares arbolTitulares;
     ListaSucursales listaSucursales;
 
 public:

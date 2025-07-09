@@ -5,6 +5,7 @@
 #include "ArchivoBinario.h"
 #include "CifradoCesar.h"
 #include "Backups.h"
+#include "BPlusTreeTitulares.h"
 #include <ctime>
 
 #include <fstream>
@@ -53,7 +54,7 @@ void Sistema::menuPrincipal() {
             case 6: buscarPorTitular(); break;
             case 7: buscarPersonalizada(); break;
             case 8: menuSecundario(); break;
-            case 9: mostrarAyuda(); break;
+            case 9: arbolTitulares.imprimir();/*mostrarAyuda();*/ break;
             case 10: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
@@ -64,7 +65,7 @@ void Sistema::menuSecundario(){
         "Guardar archivo sin cifrar",
         "Guardar archivo cifrado",
         "Decifrar archivo cifrado",
-        "Restaurar backup", // Nueva opción
+        "Restaurar backup",
         "Regresar al menu principal"
     };
     Menu menu;
@@ -93,7 +94,7 @@ void Sistema::menuSecundario(){
 }
 void Sistema::registrarTitular() {
     system("cls");
-    cout << "--- REGISTRAR TITULAR --- \n" << endl;
+    cout << "\n--- REGISTRAR TITULAR --- \n" << endl;
     string nombre = val.ingresarCadena((char*)"Ingrese nombre:");
     string apellido = val.ingresarCadena((char*)"\nIngrese apellido:");
     for (char& c : nombre) c = toupper(c);
@@ -146,7 +147,9 @@ void Sistema::registrarTitular() {
 
     Titular* nuevo = new Titular(persona);
     titulares.insertar(nuevo);
-
+    arbolTitulares = BPlusTreeTitulares(3);
+    arbolTitulares.construirDesdeLista(titulares.getCabeza());
+    arbolTitulares.imprimir();
     cout << "\nTitular registrado exitosamente." << endl;
     Backups backup;
     backup.crearBackup(titulares);
@@ -167,7 +170,7 @@ Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
 
 void Sistema::crearCuenta() {
     system("cls");
-    cout << "--- CREAR CUENTA ---\n" << endl;
+    cout << "\n--- CREAR CUENTA ---\n" << endl;
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular: ");
     Titular* titular = buscarTitularPorCI(cedula);
     if (!titular) {
@@ -233,7 +236,7 @@ void Sistema::realizarDeposito() {
         return;
     }
     system("cls");
-    cout << "--- REALIZAR DEPOSITO ---" << endl;
+    cout << "\n--- REALIZAR DEPOSITO ---" << endl;
 
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
@@ -311,7 +314,7 @@ void Sistema::realizarRetiro() {
         return;
     }
     system("cls");
-    cout << "--- REALIZAR RETIRO ---" << endl;
+    cout << "\n--- REALIZAR RETIRO ---" << endl;
 
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
@@ -381,7 +384,7 @@ void Sistema::realizarRetiro() {
 
     // *** Obtener la lista actualizada después de agregar el movimiento ***
     movs = cuenta->getMovimientos();
-    cout << "[DEBUG] Movimientos en la cuenta " << cuenta->getID() << " tras la operación:\n";
+    cout << "\n[DEBUG] Movimientos en la cuenta " << cuenta->getID() << " tras la operación:\n";
     NodoDoble<Movimiento*>* actualMov = movs.getCabeza();
     if (actualMov) {
         do {
@@ -405,7 +408,7 @@ void Sistema::realizarRetiro() {
 
 void Sistema::guardarArchivoBinCifrado() {
     system("cls");
-    cout << "--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
+    cout << "\n--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
     if (titulares.vacia()) {
         cout << "\nNo hay titulares registrados para guardar.\n" << endl;
         system("pause");
@@ -424,7 +427,7 @@ void Sistema::guardarArchivoBinCifrado() {
 }
 void Sistema::guardarArchivoBinSinCifrar() {
     system("cls");
-    cout << "--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
+    cout << "\n--- GUARDAR CUENTAS EN ARCHIVO BINARIO ---" << endl;
     if (titulares.vacia()) {
         cout << "\nNo hay titulares registrados para guardar.\n" << endl;
         system("pause");
@@ -438,7 +441,7 @@ void Sistema::guardarArchivoBinSinCifrar() {
 
 void Sistema::decifrarArchivoCifrado() {
     system("cls");
-    cout << "--- DECIFRAR ARCHIVO CIFRADO ---" << endl;
+    cout << "\n--- DECIFRAR ARCHIVO CIFRADO ---" << endl;
     ifstream archivo("cuentasCifrado.bin", ios::binary);
     if (!archivo) {
         cout << "\nNo se pudo abrir el archivo cifrado.\n" << endl;
@@ -460,7 +463,7 @@ void Sistema::buscarMovimientosPorFecha() {
         return;
     }
     system("cls");
-    cout << "--- BUSCAR MOVIMIENTOS POR RANGO DE FECHAS ---" << endl;
+    cout << "\n--- BUSCAR MOVIMIENTOS POR RANGO DE FECHAS ---" << endl;
 
     // Ingreso y validación de fechas de inicio y fin
     ValidacionFecha valFecha;
@@ -563,7 +566,7 @@ void Sistema::buscarMovimientosPorFecha() {
 
 void Sistema::buscarPorTitular() {
     system("cls");
-    cout << "--- BUSQUEDA POR TITULAR ---" << endl;
+    cout << "\n--- BUSQUEDA POR TITULAR ---" << endl;
     string criterioOriginal = val.ingresarCadena((char*)"Ingrese cualquier dato a buscar (nombre o apellido):");
 
     // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
@@ -609,7 +612,7 @@ void Sistema::buscarPorTitular() {
 
 void Sistema::buscarPersonalizada() {
     system("cls");
-    cout << "--- BUSQUEDA PERSONALIZADA GLOBAL ---" << endl;
+    cout << "\n--- BUSQUEDA PERSONALIZADA GLOBAL ---" << endl;
     string criterioOriginal = val.ingresarTextoLibre((char*)"Ingrese cualquier dato a buscar (nombre, apellido, cedula, telefono, correo, ID cuenta, tipo cuenta, saldo, movimiento, etc):");
 
     // Función lambda para convertir una cadena a minúsculas sin usar <algorithm>
@@ -761,7 +764,7 @@ void Sistema::buscarPersonalizada() {
 
 void Sistema::mostrarAyuda() {
     system("cls");
-    cout << "--- AYUDA DEL SISTEMA ---\n" << endl;
+    cout << "\n--- AYUDA DEL SISTEMA ---\n" << endl;
     cout << "Abriendo el archivo de ayuda...\n" << endl;
     // Abre el archivo CHM con la aplicación predeterminada en Windows
     system("start Ayuda-CuentasBancarias.chm");
