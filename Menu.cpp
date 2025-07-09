@@ -21,30 +21,30 @@ int Menu:: ingresarMenu (const char* titulo, const char** opciones, int n){
 
     do {
         system("cls");
-        //Mostrar Flecha cursor
-        gotoxy(5,3 + opcion); 
-        cout << "->";
-        //Mostrar Titulo
-        gotoxy(15,2); cout << titulo;
-        //Mostrar Opciones
+        //Mostrar Titulo en la línea 2 (Y=1)
+        gotoxy(15, 2); cout << titulo;
+        //Mostrar Opciones desde la línea 4 (Y=3)
         for (int i = 0; i < n; i++) {
-            gotoxy(10,4 + i); 
-            cout << i + 1 <<"." << *(opciones +i); 
+            gotoxy(10, 4 + i); 
+            cout << i + 1 <<"." << *(opciones + i); 
         }
+        //Mostrar Flecha cursor alineada con la opción seleccionada
+        gotoxy(8, 4 + (opcion - 1)); 
+        cout << "->";
         // Solo se puede presionar tecla arriba 72, abajo 80 o enter 13
         do {
             tecla = getch();
         } while(tecla!= 72 && tecla != 80 && tecla != 13) ;
         switch(tecla){
             case 72:
-                opcion --;
-                if(opcion <1){
+                opcion--;
+                if(opcion < 1){
                     opcion = n;
                 }
                 break;
             case 80:
                 opcion++;
-                if(opcion >n){
+                if(opcion > n){
                     opcion = 1;
                 }
                 break;
