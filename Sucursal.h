@@ -11,6 +11,8 @@ private:
     float longitud; // Longitud de la sucursal
     std::string idSucursal;  // Identificador único de la sucursal
     int contadorCuentas;  // Contador de cuentas asociadas a la sucursal
+    int horaApertura;
+    int horaCierre;
 
 public:
     // Constructor
@@ -37,6 +39,12 @@ public:
 
     // Función para mostrar la información de la sucursal
     void imprimir() const;
+
+    int getHoraApertura() const { return horaApertura; }
+    void setHoraApertura(int hora) { horaApertura = hora; }
+
+    int getHoraCierre() const { return horaCierre; }
+    void setHoraCierre(int hora) { horaCierre = hora; }
 };
 
 #endif

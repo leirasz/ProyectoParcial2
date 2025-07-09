@@ -17,6 +17,7 @@ void BPlusTreeTitulares::liberarNodo(NodoBPlus* nodo) {
 }
 
 void BPlusTreeTitulares::insertar(const std::string& ci, Titular* titular) {
+
     if (!raiz) {
         raiz = new NodoBPlus(grado, true);
         raiz->claves[0] = ci;
@@ -35,6 +36,7 @@ void BPlusTreeTitulares::insertar(const std::string& ci, Titular* titular) {
         nuevaRaiz->numClaves = 1;
         raiz = nuevaRaiz;
     }
+    imprimir(); // Imprimir después de cada inserción para verificar
 }
 
 void BPlusTreeTitulares::insertarEnNodo(NodoBPlus* nodo, const std::string& ci, Titular* titular, NodoBPlus*& nuevoHijo, std::string& nuevaClave) {
@@ -106,19 +108,211 @@ void BPlusTreeTitulares::insertarEnNodo(NodoBPlus* nodo, const std::string& ci, 
 }
 
 Titular* BPlusTreeTitulares::buscar(const std::string& ci) const {
+    
+    if (!raiz) {
+        
+        return nullptr;
+    }
     return buscarEnNodo(raiz, ci);
 }
 
 Titular* BPlusTreeTitulares::buscarEnNodo(NodoBPlus* nodo, const std::string& ci) const {
-    if (!nodo) return nullptr;
+    if (!nodo) {
+        
+        return nullptr;  // Si el nodo es nulo, no encontramos el CI
+    }
+
     int i = 0;
-    while (i < nodo->numClaves && ci > nodo->claves[i]) ++i;
+    while (i < nodo->numClaves && ci > nodo->claves[i]) {
+        ++i;
+    }
+
+
     if (nodo->esHoja) {
-        if (i < nodo->numClaves && nodo->claves[i] == ci)
-            return nodo->datos[i];
+        // Si es un nodo hoja, buscamos el titular
+        if (i < nodo->numClaves && ci == nodo->claves[i]) {
+            return nodo->datos[i];  // Retornamos el Titular correspondiente
+        }
         return nullptr;
+    }
+
+    // Si no es hoja, seguimos buscando en los hijos
+    return buscarEnNodo(nodo->hijos[i], ci);
+}
+
+void BPlusTreeTitulares::eliminar(const std::string& ci) {
+    if (!raiz) return;
+
+    eliminarEnNodo(raiz, ci, nullptr, -1);
+
+    // Si la raíz queda vacía y tiene un hijo, actualizar la raíz
+    if (!raiz->esHoja && raiz->numClaves == 0 && raiz->hijos[0]) {
+        NodoBPlus* temp = raiz;
+        raiz = raiz->hijos[0];
+        delete temp;
+    }
+}
+
+void BPlusTreeTitulares::eliminarEnNodo(NodoBPlus* nodo, const std::string& ci, NodoBPlus* padre, int indicePadre) {
+    int i = 0;
+    while (i < nodo->numClaves && ci > nodo->claves[i]) {
+        ++i;
+    }
+
+    if (nodo->esHoja) {
+        // Buscar la clave en la hoja
+        if (i < nodo->numClaves && ci == nodo->claves[i]) {
+            // Eliminar la clave y el dato
+            for (int j = i; j < nodo->numClaves - 1; ++j) {
+                nodo->claves[j] = nodo->claves[j + 1];
+                nodo->datos[j] = nodo->datos[j + 1];
+            }
+            nodo->numClaves--;
+        } else {
+            return; // Clave no encontrada
+        }
+
+        // Verificar si el nodo tiene menos claves de las mínimas
+        if (nodo->numClaves < (grado + 1) / 2 - 1 && padre) {
+            manejarUnderflow(nodo, padre, indicePadre);
+        }
     } else {
-        return buscarEnNodo(nodo->hijos[i], ci);
+        // Nodo interno, descender al hijo adecuado
+        eliminarEnNodo(nodo->hijos[i], ci, nodo, i);
+
+        // Verificar si el hijo tiene menos claves de las mínimas
+        if (i <= nodo->numClaves && nodo->hijos[i]->numClaves < (grado + 1) / 2 - 1) {
+            manejarUnderflow(nodo->hijos[i], nodo, i);
+        }
+    }
+}
+
+void BPlusTreeTitulares::manejarUnderflow(NodoBPlus* nodo, NodoBPlus* padre, int indice) {
+    // Obtener hermanos
+    NodoBPlus* hermanoIzq = (indice > 0) ? padre->hijos[indice - 1] : nullptr;
+    NodoBPlus* hermanoDer = (indice < padre->numClaves) ? padre->hijos[indice + 1] : nullptr;
+
+    // Intentar redistribuir con el hermano izquierdo
+    if (hermanoIzq && hermanoIzq->numClaves > (grado + 1) / 2 - 1) {
+        if (nodo->esHoja) {
+            // Mover la última clave del hermano izquierdo al nodo
+            for (int j = nodo->numClaves; j > 0; --j) {
+                nodo->claves[j] = nodo->claves[j - 1];
+                nodo->datos[j] = nodo->datos[j - 1];
+            }
+            nodo->claves[0] = hermanoIzq->claves[hermanoIzq->numClaves - 1];
+            nodo->datos[0] = hermanoIzq->datos[hermanoIzq->numClaves - 1];
+            nodo->numClaves++;
+            hermanoIzq->numClaves--;
+            // Actualizar clave en el padre
+            padre->claves[indice - 1] = nodo->claves[0];
+        } else {
+            // Mover la clave del padre al nodo y la última clave del hermano al padre
+            nodo->claves[nodo->numClaves] = padre->claves[indice - 1];
+            nodo->hijos[nodo->numClaves + 1] = hermanoIzq->hijos[hermanoIzq->numClaves];
+            nodo->numClaves++;
+            padre->claves[indice - 1] = hermanoIzq->claves[hermanoIzq->numClaves - 1];
+            hermanoIzq->numClaves--;
+        }
+        return;
+    }
+
+    // Intentar redistribuir con el hermano derecho
+    if (hermanoDer && hermanoDer->numClaves > (grado + 1) / 2 - 1) {
+        if (nodo->esHoja) {
+            // Mover la primera clave del hermano derecho al nodo
+            nodo->claves[nodo->numClaves] = hermanoDer->claves[0];
+            nodo->datos[nodo->numClaves] = hermanoDer->datos[0];
+            nodo->numClaves++;
+            for (int j = 0; j < hermanoDer->numClaves - 1; ++j) {
+                hermanoDer->claves[j] = hermanoDer->claves[j + 1];
+                hermanoDer->datos[j] = hermanoDer->datos[j + 1];
+            }
+            hermanoDer->numClaves--;
+            // Actualizar clave en el padre
+            padre->claves[indice] = hermanoDer->claves[0];
+        } else {
+            // Mover la clave del padre al nodo y la primera clave del hermano al padre
+            nodo->claves[nodo->numClaves] = padre->claves[indice];
+            nodo->hijos[nodo->numClaves + 1] = hermanoDer->hijos[0];
+            nodo->numClaves++;
+            padre->claves[indice] = hermanoDer->claves[0];
+            for (int j = 0; j < hermanoDer->numClaves - 1; ++j) {
+                hermanoDer->claves[j] = hermanoDer->claves[j + 1];
+                hermanoDer->hijos[j] = hermanoDer->hijos[j + 1];
+            }
+            hermanoDer->hijos[hermanoDer->numClaves - 1] = hermanoDer->hijos[hermanoDer->numClaves];
+            hermanoDer->numClaves--;
+        }
+        return;
+    }
+
+    // Fusionar con el hermano izquierdo o derecho
+    if (hermanoIzq) {
+        if (nodo->esHoja) {
+            // Fusionar nodo con hermano izquierdo
+            for (int j = 0; j < nodo->numClaves; ++j) {
+                hermanoIzq->claves[hermanoIzq->numClaves + j] = nodo->claves[j];
+                hermanoIzq->datos[hermanoIzq->numClaves + j] = nodo->datos[j];
+            }
+            hermanoIzq->numClaves += nodo->numClaves;
+            hermanoIzq->siguiente = nodo->siguiente;
+            // Eliminar la clave del padre
+            for (int j = indice - 1; j < padre->numClaves - 1; ++j) {
+                padre->claves[j] = padre->claves[j + 1];
+                padre->hijos[j + 1] = padre->hijos[j + 2];
+            }
+            padre->numClaves--;
+            delete nodo;
+        } else {
+            // Fusionar nodo con hermano izquierdo
+            hermanoIzq->claves[hermanoIzq->numClaves] = padre->claves[indice - 1];
+            hermanoIzq->numClaves++;
+            for (int j = 0; j < nodo->numClaves; ++j) {
+                hermanoIzq->claves[hermanoIzq->numClaves + j] = nodo->claves[j];
+                hermanoIzq->hijos[hermanoIzq->numClaves + j] = nodo->hijos[j];
+            }
+            hermanoIzq->hijos[hermanoIzq->numClaves + nodo->numClaves] = nodo->hijos[nodo->numClaves];
+            hermanoIzq->numClaves += nodo->numClaves;
+            for (int j = indice - 1; j < padre->numClaves - 1; ++j) {
+                padre->claves[j] = padre->claves[j + 1];
+                padre->hijos[j + 1] = padre->hijos[j + 2];
+            }
+            padre->numClaves--;
+            delete nodo;
+        }
+    } else if (hermanoDer) {
+        if (nodo->esHoja) {
+            // Fusionar nodo con hermano derecho
+            for (int j = 0; j < hermanoDer->numClaves; ++j) {
+                nodo->claves[nodo->numClaves + j] = hermanoDer->claves[j];
+                nodo->datos[nodo->numClaves + j] = hermanoDer->datos[j];
+            }
+            nodo->numClaves += hermanoDer->numClaves;
+            nodo->siguiente = hermanoDer->siguiente;
+            for (int j = indice; j < padre->numClaves - 1; ++j) {
+                padre->claves[j] = padre->claves[j + 1];
+                padre->hijos[j + 1] = padre->hijos[j + 2];
+            }
+            padre->numClaves--;
+            delete hermanoDer;
+        } else {
+            // Fusionar nodo con hermano derecho
+            nodo->claves[nodo->numClaves] = padre->claves[indice];
+            nodo->numClaves++;
+            for (int j = 0; j < hermanoDer->numClaves; ++j) {
+                nodo->claves[nodo->numClaves + j] = hermanoDer->claves[j];
+                nodo->hijos[nodo->numClaves + j] = hermanoDer->hijos[j];
+            }
+            nodo->hijos[nodo->numClaves + hermanoDer->numClaves] = hermanoDer->hijos[hermanoDer->numClaves];
+            nodo->numClaves += hermanoDer->numClaves;
+            for (int j = indice; j < padre->numClaves - 1; ++j) {
+                padre->claves[j] = padre->claves[j + 1];
+                padre->hijos[j + 1] = padre->hijos[j + 2];
+            }
+            padre->numClaves--;
+            delete hermanoDer;
+        }
     }
 }
 

@@ -436,3 +436,135 @@ string Validaciones::ingresarCodigoSucursal(char msj[50]) {
         }
     } while (true);
 }
+float Validaciones:: ingresarCoordenada(char msj[50], bool esLatitud ) {
+        char c;
+        int i = 0;
+        char dato[10]; // Máximo: -XX.XXXX (9 caracteres: signo, 2 dígitos, punto, 4 dígitos, '\0')
+        bool haySigno = false;
+        bool hayPunto = false;
+        int digitosEnteros = 0;
+        int digitosDecimales = 0;
+
+        std::cout << msj << std::endl;
+
+        while ((c = getch()) != 13 || i == 0) { // Evitar aceptar entrada vacía
+            // Permitir signo negativo solo al inicio
+            if (c == '-' && i == 0 && !haySigno) {
+                dato[i++] = c;
+                std::cout << c;
+                haySigno = true;
+            }
+            // Permitir dígitos para la parte entera (máximo 2)
+            else if (c >= '0' && c <= '9' && !hayPunto && digitosEnteros < 2) {
+                if (i < 9) { // Asegurar espacio para el resto
+                    dato[i++] = c;
+                    std::cout << c;
+                    digitosEnteros++;
+                }
+            }
+            // Permitir punto decimal solo si hay al menos un dígito entero
+            else if (c == '.' && !hayPunto && digitosEnteros > 0) {
+                if (i < 9) {
+                    dato[i++] = c;
+                    std::cout << c;
+                    hayPunto = true;
+                }
+            }
+            // Permitir dígitos para la parte decimal (exactamente 4)
+            else if (c >= '0' && c <= '9' && hayPunto && digitosDecimales < 4) {
+                if (i < 9) {
+                    dato[i++] = c;
+                    std::cout << c;
+                    digitosDecimales++;
+                }
+            }
+            // Permitir backspace
+            else if (c == 8 && i > 0) {
+                i--;
+                if (dato[i] == '.') {
+                    hayPunto = false;
+                    digitosDecimales = 0;
+                } else if (dato[i] == '-') {
+                    haySigno = false;
+                } else if (hayPunto) {
+                    digitosDecimales--;
+                } else {
+                    digitosEnteros--;
+                }
+                std::cout << "\b \b";
+            }
+            // Rechazar otros caracteres
+            else {
+                continue;
+            }
+
+            // Si se han ingresado 4 dígitos decimales, permitir Enter
+            if (hayPunto && digitosDecimales == 4 && c == 13) {
+                break;
+            }
+        }
+
+        dato[i] = '\0';
+        float valor = atof(dato);
+
+        // Validar rango según si es latitud o longitud
+        if (esLatitud) {
+            if (valor < -90.0f || valor > 90.0f) {
+                std::cout << "\nError: La latitud debe estar entre -90 y 90. Intente de nuevo.\n";
+                system("pause");
+                return ingresarCoordenada(msj, esLatitud); // Reintentar
+            }
+        } else {
+            if (valor < -180.0f || valor > 180.0f) {
+                std::cout << "\nError: La longitud debe estar entre -180 y 180. Intente de nuevo.\n";
+                system("pause");
+                return ingresarCoordenada(msj, esLatitud); // Reintentar
+            }
+        }
+
+        return valor;
+}
+std::string Validaciones::ingresarNombreArchivo(const char* mensaje) {
+    string entrada;
+    bool valido = false;
+    do {
+        cout << mensaje;
+        getline(cin, entrada);
+
+        // Verificar que la entrada no esté vacía
+        if (entrada.empty()) {
+            cout << "\nEl nombre del archivo no puede estar vacio. Intente de nuevo.\n" << endl;
+            continue;
+        }
+
+        // Verificar que contenga al menos un punto (para la extensión)
+        if (entrada.find('.') == string::npos) {
+            cout << "\nEl nombre del archivo debe incluir una extension (ejemplo: .txt o .md5). Intente de nuevo.\n" << endl;
+            continue;
+        }
+
+        // Verificar que solo contenga caracteres permitidos: letras, números, puntos, guiones, guiones bajos
+        bool caracteresValidos = true;
+        for (char c : entrada) {
+            if (!isalnum(c) && c != '.' && c != '-' && c != '_') {
+                caracteresValidos = false;
+                break;
+            }
+        }
+
+        if (!caracteresValidos) {
+            cout << "\nEl nombre del archivo contiene caracteres no permitidos. Use letras, numeros, puntos, guiones o guiones bajos. Intente de nuevo.\n" << endl;
+            continue;
+        }
+
+        // Verificar que el nombre no sea demasiado largo (límite de 255 caracteres)
+        if (entrada.length() > 255) {
+            cout << "\nEl nombre del archivo es demasiado largo. Intente de nuevo.\n" << endl;
+            continue;
+        }
+
+        valido = true;
+    } while (!valido);
+
+    return entrada;
+}

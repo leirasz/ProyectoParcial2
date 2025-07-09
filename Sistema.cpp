@@ -6,16 +6,20 @@
 #include "CifradoCesar.h"
 #include "Backups.h"
 #include "BPlusTreeTitulares.h"
+#include "BusquedasBinarias.h"
+#include "TablaHash.h"
+#include <sstream>
+#include <iomanip>
 #include <ctime>
-
 #include <fstream>
 #include <iostream>
 using namespace std;
 
-Sistema::Sistema() {
+Sistema::Sistema(): arbolTitulares(3) {
     listaSucursales.agregarSucursal(Sucursal("Sucursal Central", -34.6037, -58.3816, "123"));
     listaSucursales.agregarSucursal(Sucursal("Sucursal Norte", -34.7000, -58.3000, "456"));
     listaSucursales.agregarSucursal(Sucursal("Sucursal Sur", -34.8000, -58.4000, "789"));
+    actualizarContadoresSucursales();
 }
 
 Sistema::~Sistema() {
@@ -37,14 +41,19 @@ void Sistema::menuPrincipal() {
         "Buscar movimientos por fecha",
         "Buscar titular por datos",
         "Busqueda personalizada",
+        "Busquedas Binarias",
         "Guardar Archivo Binario",
+        "Arbol B+",
+        "Guardar titulares en archivo TXT",
+        "Verificar integridad de archivo TXT",
+        "Mostrar tabla hash",
         "Mostrar ayuda",
         "Salir"
     };
     Menu menu;
     int opcion;
     do {
-        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 10);
+        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 15);
         switch(opcion) {
             case 1: registrarTitular(); break;
             case 2: crearCuenta(); break;
@@ -53,12 +62,113 @@ void Sistema::menuPrincipal() {
             case 5: buscarMovimientosPorFecha(); break;
             case 6: buscarPorTitular(); break;
             case 7: buscarPersonalizada(); break;
-            case 8: menuSecundario(); break;
-            case 9: arbolTitulares.imprimir();/*mostrarAyuda();*/ break;
-            case 10: cout << "\nSaliendo...\n" << endl; break;
+            case 8: menuBB(); break;
+            case 9: menuSecundario(); break;
+            case 10: menuArbol(); break;
+            case 11: guardarTitularesEnTxt();break;
+            case 12:  {
+                system("cls");
+                cout << "\n--- VERIFICAR INTEGRIDAD DE ARCHIVO TXT ---" << endl;
+                cout << "Esto compara el hash MD5 actual del archivo con el hash almacenado en la tabla hash.\n";
+                string nombreArchivo = val.ingresarNombreArchivo((char*)"Ingrese el nombre del archivo TXT (ejemplo: titulares.txt): ");
+                if (compararHashArchivo(nombreArchivo)) {
+                    cout << "\nEl archivo no ha sido modificado (los hashes coinciden).\n" << endl;
+                } else {
+                    cout << "\nEl archivo ha sido modificado o no se encontro el hash en la tabla hash.\n" << endl;
+                }
+                system("pause");
+                break;
+            }
+            case 13: {
+                system("cls");
+                cout << "\n--- MOSTRAR TABLA HASH ---" << endl;
+                hashes.mostrarContenido();
+                system("pause");
+                break;
+            }
+            case 14: mostrarAyuda(); break;
+            case 15: cout << "\nSaliendo...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
-    } while(opcion != 10);
+    } while(opcion != 15);
+}
+void Sistema::menuArbol(){
+    const char* opciones[] = {
+        "Buscar en Arbol B+",
+        "Eliminar en Arbol B+",
+        "Graficar Arbol B+",
+        "Regresar al menu principal"
+    };
+    Menu menu;
+    int opcion;
+    do {
+        opcion = menu.ingresarMenu("Arbol B+", opciones, 4);
+        switch(opcion) {
+            case 1:{
+                string ciBuscar = val.ingresarCedula((char*)"\nIngrese el CI del titular para buscar: ");
+                std::cout << "\nBuscando en el Arbol B+...\n";
+                Titular* titularEncontrado = arbolTitulares.buscar(ciBuscar);
+                std::cout << "\nResultado de la busqueda:\n";
+                if (titularEncontrado) {
+                    std::cout << "\nTitular encontrado:\n";
+                    std::cout << "Nombre: " << titularEncontrado->getPersona().getNombre() << " " 
+                              << titularEncontrado->getPersona().getApellido() << std::endl;
+                    std::cout << "Numero de cuenta corriente: "
+                              << (titularEncontrado->getCuentaCorriente() ? titularEncontrado->getCuentaCorriente()->getID() : "No tiene cuenta corriente") << std::endl;
+                    std::cout << "Cuentas de ahorro: ";
+                    if (titularEncontrado->getCuentasAhorro().vacia()) {
+                        std::cout << "No tiene cuentas de ahorro" << std::endl;
+                    } else {
+                        std::cout << std::endl;
+                        titularEncontrado->mostrarCuentasAhorro();
+                    }
+                } else {
+                    std::cout << "\nTitular no encontrado." << std::endl;
+                }
+                std::cout.flush(); // Forzar la salida
+                system("pause");
+                break;
+            }  
+            case 2: {
+                string ciEliminar = val.ingresarCedula((char*)"\nIngrese el CI del titular para eliminar: ");
+                std::cout << "\nBuscando titular para eliminar...\n";
+                Titular* titularEncontrado = arbolTitulares.buscar(ciEliminar);
+                if (titularEncontrado) {
+                    // Eliminar del árbol B+
+                    arbolTitulares.eliminar(ciEliminar);
+                    // Eliminar de la lista de titulares
+                    NodoDoble<Titular*>* actual = titulares.getCabeza();
+                    if (actual) {
+                        do {
+                            if (actual->dato->getPersona().getCI() == ciEliminar) {
+                                titulares.eliminar(actual);
+                                delete actual->dato; // Liberar memoria del titular
+                                break;
+                            }
+                            actual = actual->siguiente;
+                        } while (actual != titulares.getCabeza());
+                    }
+                    std::cout << "\nTitular eliminado exitosamente.\n";
+                    // Actualizar contadores de sucursales
+                    actualizarContadoresSucursales();
+                    // Crear backup
+                    Backups backup;
+                    backup.crearBackup(titulares);
+                    // Imprimir árbol para verificar
+                    std::cout << "\nArbol despues de la eliminacion:\n";
+                    arbolTitulares.imprimir();
+                } else {
+                    std::cout << "\nTitular no encontrado." << std::endl;
+                }
+                std::cout.flush();
+                system("pause");
+                break;
+            }
+            case 3:  break;
+            case 4: cout << "\nRegresando al menu principal...\n" << endl; break;
+            default: cout << "\nOpcion invalida." << endl; system("pause"); break;
+        }
+    } while(opcion != 4);
 }
 void Sistema::menuSecundario(){
     const char* opciones[] = {
@@ -137,19 +247,17 @@ void Sistema::registrarTitular() {
     fechaNacimiento.setMes(mes);
     fechaNacimiento.setAnio(anioObj);
 
-    Persona persona;
-    persona.setNombre(nombre);
-    persona.setApellido(apellido);
-    persona.setCI(cedula);
-    persona.setTelefono(telefono);
-    persona.setCorreo(correo);
-    persona.setFechaNa(fechaNacimiento);
+    Persona persona(nombre, apellido, cedula, telefono, correo, fechaNacimiento);
 
+    // Crear Titular con la persona
     Titular* nuevo = new Titular(persona);
+
+    // Insertar el nuevo titular en la lista y en el árbol B+
     titulares.insertar(nuevo);
-    arbolTitulares = BPlusTreeTitulares(3);
-    arbolTitulares.construirDesdeLista(titulares.getCabeza());
+    arbolTitulares.insertar(cedula, nuevo);
+    
     arbolTitulares.imprimir();
+    std::cout.flush();
     cout << "\nTitular registrado exitosamente." << endl;
     Backups backup;
     backup.crearBackup(titulares);
@@ -819,4 +927,443 @@ void Sistema::actualizarContadoresSucursales() {
             actual = actual->siguiente;
         } while (actual != titulares.getCabeza());
     }
+}
+/*void Sistema::graficarArbol() {
+    sf::RenderWindow window(sf::VideoMode(1200, 800), "Arbol B+");
+    window.setFramerateLimit(60);
+
+    sf::Font font;
+    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
+        std::cout << "Error al cargar la fuente." << std::endl;
+        return;
+    }
+
+    NodoBPlus* raiz = arbolTitulares.getRaiz();
+
+    auto dibujarNodo = [&](auto& self, NodoBPlus* nodo, float x, float y, float dx, int nivel) -> void {
+        if (!nodo) return;
+
+        // Calcular ancho del nodo basado en el número de claves
+        float nodoAncho = 50.0f + (nodo->numClaves * 30.0f); // 30.0f por clave
+        float nodoAlto = 40.0f;
+
+        // Dibujar rectángulo del nodo
+        sf::RectangleShape rect(sf::Vector2f(nodoAncho, nodoAlto));
+        rect.setPosition(x - nodoAncho / 2, y);
+        rect.setFillColor(nodo->esHoja ? sf::Color(144, 238, 144) : sf::Color(173, 216, 230)); // Verde claro para hojas, azul claro para internos
+        rect.setOutlineColor(sf::Color::Black);
+        rect.setOutlineThickness(1);
+
+        // Construir texto con las claves
+        std::string texto;
+        for (int i = 0; i < nodo->numClaves; ++i) {
+            texto += nodo->claves[i] + " ";
+        }
+        sf::Text textoNodo(texto, font, 14);
+        textoNodo.setFillColor(sf::Color::Black);
+        textoNodo.setPosition(x - nodoAncho / 2 + 5, y + 5);
+
+        // Dibujar nodo
+        window.draw(rect);
+        window.draw(textoNodo);
+
+        // Dibujar conexiones a hijos si no es hoja
+        if (!nodo->esHoja && nodo->hijos) {
+            float hijoX = x - ((nodo->numClaves) * dx / 2); // Ajustar posición inicial de hijos
+            float nuevoY = y + 80;
+            for (int i = 0; i <= nodo->numClaves; ++i) {
+                if (nodo->hijos[i]) {
+                    sf::Vertex linea[] = {
+                        sf::Vertex(sf::Vector2f(x, y + nodoAlto), sf::Color::Black),
+                        sf::Vertex(sf::Vector2f(hijoX + i * dx + nodoAncho / 2, nuevoY), sf::Color::Black)
+                    };
+                    window.draw(linea, 2, sf::Lines);
+                    self(self, nodo->hijos[i], hijoX + i * dx, nuevoY, dx / std::max(2.0f, float(nodo->numClaves + 1)), nivel + 1);
+                }
+            }
+        }
+    };
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)) {
+                window.close();
+            }
+        }
+        window.clear(sf::Color::White);
+        if (raiz) {
+            dibujarNodo(dibujarNodo, raiz, 600, 50, 200, 0); // Centro en x=600, y=50
+        } else {
+            sf::Text texto("Arbol B+ vacio", font, 20);
+            texto.setFillColor(sf::Color::Black);
+            texto.setPosition(550, 350);
+            window.draw(texto);
+        }
+        window.display();
+    }
+}*/
+
+// BUSQUEDAS BINARIAS
+void Sistema::busquedasBinarias() {
+    menuBB();
+}
+
+void Sistema::menuBB() {
+    system("cls");
+    BusquedasBinarias buscador;
+    Menu menu;
+    ListaSucursales sucursales;
+    const char* opciones[] = {
+        "Buscar deposito mayor o igual a un monto",
+        "Deposito minimo mensual para meta de ahorro",
+        "Buscar titular por CI",
+        "Buscar titular por anio de nacimiento ",
+        "Buscar sucursal mas cercana",
+        "Buscar tiempo minimo entre usuarios",
+        "Regresar al menu principal"
+    };
+    int opcion;
+    do {
+        opcion = menu.ingresarMenu("BUSQUEDAS BINARIAS", opciones, 7);
+        switch(opcion) {
+            case 1: {
+                // Buscar primer deposito mayor o igual a un monto
+                cout << "\n--- Buscar primer deposito mayor o igual a un monto ---\n";
+                cout << " Esta funcion permite buscar el primer deposito en una cuenta bancaria que sea mayor o igual a un monto especificado.\n";
+                string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
+                Titular* titular = buscarTitularPorCI(cedula);
+                if (!titular) {
+                    cout << "Titular no encontrado.\n"; system("pause"); break;
+                }
+                string tipo = val.ingresarCadena((char*)"\nTipo de cuenta (Corriente/Ahorro):");
+                for (char& c : tipo) c = toupper(c);
+                CuentaBancaria* cuenta = nullptr;
+                string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta:");
+                if (tipo == "CORRIENTE") {
+                    cuenta = titular->getCuentaCorriente();
+                    if (!cuenta || cuenta->getID() != idCuenta) {
+                        cout << "Cuenta corriente no encontrada o ID incorrecto.\n"; system("pause"); break;
+                    }
+                } else if (tipo == "AHORRO") {
+                    NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
+                    if (actual) {
+                        do {
+                            if (actual->dato->getID() == idCuenta) {
+                                cuenta = actual->dato;
+                                break;
+                            }
+                            actual = actual->siguiente;
+                        } while (actual != titular->getCuentasAhorro().getCabeza());
+                    }
+                    if (!cuenta) {
+                        cout << "Cuenta de ahorro no encontrada.\n"; system("pause"); break;
+                    }
+                } else {
+                    cout << "Tipo de cuenta no valido.\n"; system("pause"); break;
+                }
+                float monto = val.ingresarMonto((char*)"\nIngrese monto minimo a buscar:");
+                Movimiento* mov = buscador.primerDepositoMayorIgual(cuenta->getMovimientos(), monto);
+                if (mov) {
+                    cout << "\n El primer deposito mayor o igual al monto " << monto << " es :\n";
+                    mov->imprimir();
+                } else {
+                    cout << "\nNo se encontro ningun deposito mayor o igual a ese monto.";
+                }
+                system("pause");
+                break;
+            }
+            case 2: {
+                cout << "\n--- Deposito minimo mensual para meta de ahorro ---\n";
+                cout << " Esta funcion permite calcular el deposito mensual minimo necesario para alcanzar una meta de ahorro en un plazo determinado inciando con el saldo actual de la cuenta .\n";
+                string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
+                Titular* titular = buscarTitularPorCI(cedula);
+                if (!titular) {
+                    cout << "Titular no encontrado.\n"; system("pause"); break;
+                }
+                if (titular->getCuentasAhorro().vacia()) {
+                    cout << "El titular no tiene cuentas de ahorro.\n"; system("pause"); break;
+                }
+                string idCuenta = val.ingresarNumeros((char*)"\nIngrese ID de la cuenta de ahorro:");
+                CuentaBancaria* cuentaAhorro = nullptr;
+                NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
+                if (actual) {
+                    do {
+                        if (actual->dato->getID() == idCuenta) {
+                            cuentaAhorro = actual->dato;
+                            break;
+                        }
+                        actual = actual->siguiente;
+                    } while (actual != titular->getCuentasAhorro().getCabeza());
+                }
+                if (!cuentaAhorro) {
+                    cout << "Cuenta de ahorro no encontrada.\n"; system("pause"); break;
+                }
+
+                float saldoInicial = cuentaAhorro->getSaldo();
+                cout << "Saldo inicial de la cuenta: $" << saldoInicial << endl;
+                float saldoMeta;
+                int meses;
+                do {
+                    cout << "Saldo meta: "; cin >> saldoMeta;
+                    if (saldoMeta <= saldoInicial) {
+                        cout << "El saldo meta debe ser mayor al saldo actual de la cuenta. Intente de nuevo.\n";
+                    }
+                } while (saldoMeta <= saldoInicial);
+                cout << "Meses para alcanzar la meta: "; 
+                cin >> meses;
+                int deposito = buscador.depositoMinimoParaMeta(saldoInicial, saldoMeta, meses);
+                cout << "Deposito mensual minimo necesario: $" << deposito << endl;
+                system("pause");
+                break;
+            }
+            case 3: {
+                cout << "\n--- Buscar primer titular por CI ---\n";
+                cout << " Esta funcion permite buscar el primer titular cuyo CI sea mayor o igual al ingresado.\n";
+                string ci = val.ingresarCedula((char*)"Ingrese CI a buscar:");
+                Titular* t = buscador.primerTitularCIMayorIgual(titulares, ci);
+                if (t) {
+                    cout << "Primer titular con CI >= " << ci << ":\n";
+                    t->getPersona().imprimir();
+                } else {
+                    cout << "No se encontro ningun titular con ese CI o mayor.\n";
+                }
+                system("pause");
+                break;
+            }
+            case 4: {
+                // Buscar primer titular por año de nacimiento
+                cout << "\n--- Buscar primer titular por anio de nacimiento (mayor o igual) ---\n";
+                int anio;
+                cout << "Ingrese anio de nacimiento a buscar: "; cin >> anio;
+                Titular* t = buscador.primerTitularAnioNacimientoMayorIgual(titulares, anio);
+                if (t) {
+                    cout << "Primer titular con anio de nacimiento >= " << anio << ":\n";
+                    t->getPersona().imprimir();
+                } else {
+                    cout << "No se encontro ningun titular con ese anio o mayor.\n";
+                }
+                system("pause");
+                break;
+            }case 5: {
+                cout << "\n--- Buscar sucursal mas cercana ---\n";
+                cout << " Esta funcion encuentra la sucursal mas cercana a las coordenadas geograficas ingresadas.\n";
+                float latUsuario = val.ingresarCoordenada((char*)"Ingrese latitud:",true);
+                float lonUsuario = val.ingresarCoordenada((char*)"Ingrese longitud:",false);
+                Sucursal* sucursal = buscador.sucursalMasCercana(listaSucursales.getCabeza(), latUsuario, lonUsuario);
+                if (sucursal) {
+
+                    cout << "\nSucursal mas cercana:\n";
+                    sucursal->imprimir();
+                    srand(time(0));
+                    int diasFuturos = rand() % 5 + 1;      // Entre 1 y 5 días después
+                    int hora = rand() % 9 + 8;             // Entre 08 y 16
+                    int minuto = (rand() % 4) * 15;        // 0, 15, 30, 45
+
+                    FechaHora cita;
+                    cita.actualizarFechaHora();            // obtener fecha actual
+                    cita.setDia(cita.getDia() + diasFuturos);
+                    cita.setHora(hora);
+                    cita.setMinuto(minuto);
+                    cita.setSegundo(0);
+
+                    // Mostrar cita generada
+                    cout << "\nCita generada exitosamente:\n";
+                    cout << "Sucursal: " << sucursal->getNombre() << endl;
+                    cout << "Fecha: " << cita.obtenerFecha() << endl;
+                    cout << "Hora: " << cita.obtenerHora() << endl;
+                 } else {
+                    cout << "No se encontraron sucursales.\n";
+                }
+                system("pause");
+                break;
+                }  
+            case 6: {
+                cout << "\n--- Calcular intervalo maximo entre citas ---\n";
+                            cout << " Esta funcion calcula el maximo intervalo de tiempo (en minutos) entre citas consecutivas para programar un numero dado de clientes.\n";
+                            int nClientes;
+                            cout << "Ingrese numero de clientes a programar: ";
+                            cin >> nClientes;
+                            if (cin.fail() || nClientes < 2 || nClientes > 100000) {
+                                cin.clear();
+                                cin.ignore(10000, '\n');
+                                cout << "Numero de clientes invalido. Debe estar entre 2 y 100000.\n";
+                                system("pause");
+                                break;
+                            }
+                            int duracionCita;
+                            cout << "Ingrese duracion de cada cita (en minutos, minimo 1): ";
+                            cin >> duracionCita;
+                            if (cin.fail() || duracionCita < 1) {
+                                cin.clear();
+                                cin.ignore(10000, '\n');
+                                cout << "Duracion de cita invalida. Debe ser al menos 1 minuto.\n";
+                                system("pause");
+                                break;
+                            }
+                            if (!sucursales.getCabeza()) {
+                                cout << "No hay sucursales disponibles.\n";
+                                system("pause");
+                                break;
+                            }
+                            int maxD = buscador.maximoIntervaloCitas(sucursales.getCabeza(), nClientes, duracionCita);
+                            if (maxD == 0) {
+                                cout << "No es posible programar las citas con los datos proporcionados.\n";
+                            } else {
+                                cout << "El maximo intervalo entre citas es: " << maxD << " minutos.\n";
+                            }
+                            system("pause");
+                            break;
+}
+            case 7:
+                cout << "\nRegresando al menu principal...\n";
+                break;
+            default:
+                cout << "\nOpcion invalida.\n"; system("pause"); break;
+        }
+        }while(opcion != 7);
+    }
+void Sistema::guardarTitularesEnTxt() {
+    system("cls");
+    cout << "\n--- GUARDAR TITULARES EN ARCHIVO TXT ---" << endl;
+
+    if (titulares.vacia()) {
+        cout << "\nNo hay titulares registrados para guardar.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    ofstream archivo("titulares.txt");
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo para escribir.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    NodoDoble<Titular*>* actual = titulares.getCabeza();
+    if (actual) {
+        do {
+            Titular* titular = actual->dato;
+            Persona persona = titular->getPersona();
+
+            cout << "Guardando titular: " << persona.getNombre() << " " << persona.getApellido() << endl;
+
+            archivo << "CI: " << persona.getCI() << " - Nombre: " << persona.getNombre() << " " 
+                    << persona.getApellido() << " - Tel: " << persona.getTelefono() << " - Correo: " 
+                    << persona.getCorreo() << " - Fecha Nacimiento: " 
+                    << persona.getFechaNa().getDia() << "/" << persona.getFechaNa().getMes() << "/" 
+                    << persona.getFechaNa().getAnio().getAnio() << "\n";
+
+            CuentaBancaria* cuentaCorriente = titular->getCuentaCorriente();
+            if (cuentaCorriente) {
+                cout << "Guardando cuenta corriente de " << persona.getNombre() << endl;
+                archivo << "--- CUENTA CORRIENTE ---" << endl;
+                archivo << "ID Cuenta: " << cuentaCorriente->getID() << " - Tipo: " 
+                        << cuentaCorriente->getTipoCuenta() << " - Saldo: " 
+                        << cuentaCorriente->getSaldo() << "\n";
+            } else {
+                cout << "No tiene cuenta corriente." << endl;
+            }
+
+            NodoDoble<CuentaBancaria*>* nodoAhorro = titular->getCuentasAhorro().getCabeza();
+            if (nodoAhorro) {
+                cout << "Guardando cuentas de ahorro de " << persona.getNombre() << endl;
+                do {
+                    archivo << "--- CUENTA DE AHORRO ---" << endl;
+                    archivo << "ID Cuenta: " << nodoAhorro->dato->getID() << " - Tipo: " 
+                            << nodoAhorro->dato->getTipoCuenta() << " - Saldo: " 
+                            << nodoAhorro->dato->getSaldo() << "\n";
+                    nodoAhorro = nodoAhorro->siguiente;
+                } while (nodoAhorro != titular->getCuentasAhorro().getCabeza());
+            } else {
+                cout << "No tiene cuentas de ahorro." << endl;
+            }
+
+            archivo << "\n";
+            actual = actual->siguiente;
+        } while (actual != titulares.getCabeza());
+    }
+
+    archivo.close();
+    cout << "\nTitulares guardados exitosamente en 'titulares.txt'.\n" << endl;
+
+    // Generar y guardar el hash MD5
+    string hash = generarHashMD5("titulares.txt");
+    if (!hash.empty()) {
+        // Guardar en la tabla hash
+        hashes.insertar("titulares.txt", hash);
+        cout << "\nHash MD5 almacenado en la tabla hash para 'titulares.txt'.\n" << endl;
+
+        // Guardar en el archivo de hash como respaldo
+        ofstream hashFile("titulares.txt.md5");
+        if (hashFile) {
+            hashFile << hash;
+            hashFile.close();
+            cout << "\nHash MD5 guardado en 'titulares.txt.md5'.\n" << endl;
+        } else {
+            cout << "\nNo se pudo guardar el archivo de hash.\n" << endl;
+        }
+    } else {
+        cout << "\nNo se pudo generar el hash MD5.\n" << endl;
+    }
+
+    system("pause");
+}
+
+std::string Sistema::generarHashMD5(const std::string& nombreArchivo) {
+    ifstream archivo(nombreArchivo, ios::binary);
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo para calcular el hash.\n" << endl;
+        return "";
+    }
+
+    // Leer todo el contenido del archivo
+    string contenido;
+    char c;
+    while (archivo.get(c)) {
+        contenido += c;
+    }
+    archivo.close();
+
+    // Cálculo de un hash simple (simulación de MD5)
+    unsigned long hash = 0;
+    for (char ch : contenido) {
+        hash += (unsigned char)ch;
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+
+    // Convertir a hexadecimal (32 caracteres)
+    stringstream ss;
+    ss << hex << setw(32) << setfill('0') << hash;
+    string resultado = ss.str().substr(0, 32);
+    return resultado;
+}
+
+bool Sistema::compararHashArchivo(const std::string& nombreArchivo) {
+    // Generar el hash MD5 actual del archivo de texto
+    string hashActual = generarHashMD5(nombreArchivo);
+    if (hashActual.empty()) {
+        cout << "\nNo se pudo calcular el hash del archivo.\n" << endl;
+        return false;
+    }
+
+    // Buscar el hash en la tabla hash
+    string hashAlmacenado;
+    if (!hashes.buscar(nombreArchivo, hashAlmacenado)) {
+        cout << "\nNo se encontro un hash registrado para '" << nombreArchivo << "' en la tabla hash.\n" << endl;
+        return false;
+    }
+
+    // Comparar los hashes
+    bool coincide = hashActual == hashAlmacenado;
+    if (coincide) {
+        cout << "\nHash actual: " << hashActual << "\nHash almacenado: " << hashAlmacenado << endl;
+    } else {
+        cout << "\nHash actual: " << hashActual << "\nHash almacenado: " << hashAlmacenado << "\nLos hashes no coinciden.\n";
+    }
+    return coincide;
 }

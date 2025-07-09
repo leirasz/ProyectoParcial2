@@ -23,6 +23,8 @@ public:
     string ingresarTextoLibre(char msj[50]);
     string ingresarCodigoBak(char msj[50]);
     string ingresarCodigoSucursal(char msj[50]);
+    float ingresarCoordenada(char msj[50], bool esLatitud = true);
+    string ingresarNombreArchivo(const char* mensaje);
 };
 
 #endif

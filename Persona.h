@@ -22,6 +22,9 @@ public:
    void setFechaNa(Fecha newFechaNa);
    void imprimir();
    Persona();
+   Persona(const std::string& nombre_, const std::string& apellido_, const std::string& ci_,
+            const std::string& telefono_, const std::string& correo_, const Fecha& fechaNa_)
+        : nombre(nombre_), apellido(apellido_), CI(ci_), telefono(telefono_), correo(correo_), fechaNa(fechaNa_) {}
    ~Persona();
 
 protected:

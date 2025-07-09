@@ -6,6 +6,7 @@
 
 class NodoBPlus {
 public:
+
     bool esHoja;
     int numClaves;
     std::string* claves;

@@ -19,13 +19,13 @@ void FechaHora::actualizarFechaHora() {
     segundo = tiempoLocal->tm_sec;
 }
 
-string FechaHora::obtenerFecha() {
-    actualizarFechaHora();
+string FechaHora::obtenerFecha() const{
+    const_cast<FechaHora*>(this)->actualizarFechaHora();
     return to_string(dia) + "/" + to_string(mes) + "/" + to_string(anio);
 }
 
-string FechaHora::obtenerHora() {
-    actualizarFechaHora();
+string FechaHora::obtenerHora() const{
+    const_cast<FechaHora*>(this)->actualizarFechaHora();
     return to_string(hora) + ":" + to_string(minuto) + ":" + to_string(segundo);
 }
 

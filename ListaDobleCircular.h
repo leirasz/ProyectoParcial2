@@ -19,6 +19,7 @@ public:
     bool vacia() const;
     T eliminarPorCabeza();
     NodoDoble<T>* getCabeza() const;
+    void eliminar(NodoDoble<T>* nodo);
     ListaDobleCircular<T> getCuentasAhorro() const;
 };
 
@@ -105,7 +106,34 @@ T ListaDobleCircular<T>::eliminarPorCabeza() {
     return dato;
 }
 
+template <typename T>
+void ListaDobleCircular<T>::eliminar(NodoDoble<T>* nodo) {
+    if (!cabeza || !nodo) {
+        std::cout << "Lista vacia o nodo invalido." << std::endl;
+        return;
+    }
 
+    // Caso especial: único nodo en la lista
+    if (nodo == cabeza && cabeza->siguiente == cabeza) {
+        delete cabeza;
+        cabeza = nullptr;
+        return;
+    }
+
+    // Ajustar punteros
+    NodoDoble<T>* anterior = nodo->anterior;
+    NodoDoble<T>* siguiente = nodo->siguiente;
+    anterior->siguiente = siguiente;
+    siguiente->anterior = anterior;
+
+    // Si el nodo a eliminar es la cabeza, actualizar cabeza
+    if (nodo == cabeza) {
+        cabeza = siguiente;
+    }
+
+    // Liberar memoria del nodo (no del dato, se maneja fuera)
+    delete nodo;
+}
 
 //template <typename T>
 //ListaDobleCircular<T> ListaDobleCircular<T>::getCuentasAhorro() const {

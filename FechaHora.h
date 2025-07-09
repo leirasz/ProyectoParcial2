@@ -9,8 +9,8 @@ class FechaHora {
 public:
     FechaHora();
 
-    string obtenerFecha();
-    string obtenerHora();
+    string obtenerFecha() const;
+    string obtenerHora() const;
 
     // Getters
     int getAnio() const;
@@ -27,11 +27,12 @@ public:
     void setHora(int h);
     void setMinuto(int m);
     void setSegundo(int s);
+    void actualizarFechaHora();
 
 private:
     int anio, mes, dia, hora, minuto, segundo;
 
-    void actualizarFechaHora();
+    
 };
 
 #endif
