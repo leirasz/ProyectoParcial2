@@ -2,10 +2,23 @@
 #include <cmath> // Para calcular la distancia entre dos puntos geográficos
 
 // Constructor
+/**
+ * @brief Construct a new Sucursal:: Sucursal object
+ * 
+ * @param nombre 
+ * @param latitud 
+ * @param longitud 
+ * @param idSucursal 
+ */
 Sucursal::Sucursal(const std::string& nombre, float latitud, float longitud, const std::string& idSucursal)
     : nombre(nombre), latitud(latitud), longitud(longitud), idSucursal(idSucursal), contadorCuentas(0) {}
 
 // Getters y setters
+/**
+ * @brief Obtiene el nombre de la sucursal.
+ * 
+ * @return std::string 
+ */
 std::string Sucursal::getNombre() const { return nombre; }
 void Sucursal::setNombre(const std::string& nombre) { this->nombre = nombre; }
 

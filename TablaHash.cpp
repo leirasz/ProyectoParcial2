@@ -2,7 +2,10 @@
 #include <iostream>
 
 using namespace std;
-
+/**
+ * @brief Clase que representa una tabla hash para almacenar archivos y sus hashes MD5.
+ * 
+ */
 void TablaHash::mostrarContenido() const {
     cout << "\n--- CONTENIDO DE LA TABLA HASH ---\n" << endl;
     bool vacia = true;

@@ -8,6 +8,7 @@
 #include "BPlusTreeTitulares.h"
 #include "BusquedasBinarias.h"
 #include "TablaHash.h"
+#include "Cita.h"
 #include <sstream>
 #include <iomanip>
 #include <ctime>
@@ -21,7 +22,10 @@ Sistema::Sistema(): arbolTitulares(3) {
     listaSucursales.agregarSucursal(Sucursal("Sucursal Sur", -34.8000, -58.4000, "789"));
     actualizarContadoresSucursales();
 }
-
+/**
+ * @brief Destroy the Sistema:: Sistema object
+ * 
+ */
 Sistema::~Sistema() {
     NodoDoble<Titular*>* actual = titulares.getCabeza();
     if (actual != nullptr) {
@@ -31,6 +35,10 @@ Sistema::~Sistema() {
         } while (actual != titulares.getCabeza());
     }
 }
+/**
+ * @brief   Genera un archivo PDF con los titulares registrados.
+ * 
+ */
 void Sistema::generarPDFTitulares() {
     system("cls");
     cout << "\n--- GENERAR PDF DE TITULARES ---\n" << endl;
@@ -172,6 +180,10 @@ void Sistema::generarPDFTitulares() {
     cout << "\nPDF generado exitosamente: " << outputFile << "\n" << endl;
     system("pause");
 }
+/**
+ * @brief Muestra el menú principal del sistema bancario y permite al usuario seleccionar opciones.
+ * 
+ */
 void Sistema::menuPrincipal() {
     const char* opciones[] = {
         "Registrar titular",
@@ -231,11 +243,19 @@ void Sistema::menuPrincipal() {
             case 14: mostrarAyuda(); break;
             case 15: generarQRPDF(); break;
             case 16: generarPDFTitulares(); break; // Nueva opción
-            case 17: cout << "\nSaliendo...\n" << endl; break;
+            case 17: {Backups backup;
+                backup.crearBackup(titulares);
+                cout << "\nSaliendo...\n" << endl; break;}
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
     } while(opcion != 17);
 }
+/**
+ * @brief Genera un código QR básico (versión 1, 21x21) a partir de una cadena de datos.
+ * 
+ * @param data 
+ * @param qrMatrix 
+ */
 // Generar código QR básico (versión 1, 21x21)
 void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
     // Inicializar la matriz QR
@@ -338,7 +358,14 @@ void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
         }
     }
 }
-
+/**
+ * @brief Genera un archivo PDF con la información del titular y el código QR.
+ * 
+ * @param nombre 
+ * @param numeroCuenta 
+ * @param qrMatrix 
+ * @param outputFile 
+ */
 // Generar archivo PDF
 void Sistema::generarPDF(const std::string& nombre, const std::string& numeroCuenta, bool qrMatrix[21][21], const std::string& outputFile) {
     ofstream archivo(outputFile, ios::binary);
@@ -439,7 +466,10 @@ void Sistema::generarPDF(const std::string& nombre, const std::string& numeroCue
     archivo.close();
     cout << "\nPDF generado exitosamente: " << outputFile << "\n" << endl;
 }
-
+/**
+ * @brief Muestra el menú secundario del sistema bancario y permite al usuario seleccionar opciones.
+ * 
+ */
 // Generar código QR en PDF
 void Sistema::generarQRPDF() {
     system("cls");
@@ -518,6 +548,10 @@ void Sistema::generarQRPDF() {
 
     system("pause");
 }
+/**
+ * @brief Muestra el menú del árbol B+ y permite al usuario realizar operaciones sobre él.
+ * 
+ */
 void Sistema::menuArbol(){
     const char* opciones[] = {
         "Buscar en Arbol B+",
@@ -590,12 +624,24 @@ void Sistema::menuArbol(){
                 system("pause");
                 break;
             }
-            case 3:  break;
+            case 3: {
+                system("cls");
+                std::cout << "\n--- GRAFICAR ARBOL B+ (REPRESENTACION TEXTUAL) ---" << std::endl;
+                std::cout << "\nMostrando la estructura del Arbol B+ con niveles:\n";
+                arbolTitulares.imprimirArbolBPlus();
+                
+                system("pause");
+                break;
+            }
             case 4: cout << "\nRegresando al menu principal...\n" << endl; break;
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
     } while(opcion != 4);
 }
+/**
+ * @brief Muestra el menú secundario del sistema bancario y permite al usuario seleccionar opciones relacionadas con archivos binarios.
+ * 
+ */
 void Sistema::menuSecundario(){
     const char* opciones[] = {
         "Guardar archivo sin cifrar",
@@ -628,6 +674,10 @@ void Sistema::menuSecundario(){
         }
     } while(opcion != 5);
 }
+/**
+ * @brief Registra un nuevo titular en el sistema bancario.
+ * 
+ */
 void Sistema::registrarTitular() {
     system("cls");
     cout << "\n--- REGISTRAR TITULAR --- \n" << endl;
@@ -689,7 +739,12 @@ void Sistema::registrarTitular() {
     backup.crearBackup(titulares);
     system("pause");
 }
-
+/**
+ * @brief Busca un titular por su cédula de identidad (CI).
+ * 
+ * @param ci 
+ * @return Titular* 
+ */
 Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
     NodoDoble<Titular*>* actual = titulares.getCabeza();
     if (actual != nullptr) {
@@ -701,7 +756,10 @@ Titular* Sistema::buscarTitularPorCI(const std::string& ci) {
     }
     return nullptr;
 }
-
+/**
+ * @brief Crea una nueva cuenta bancaria para un titular existente.
+ * 
+ */
 void Sistema::crearCuenta() {
     system("cls");
     cout << "\n--- CREAR CUENTA ---\n" << endl;
@@ -762,7 +820,10 @@ void Sistema::crearCuenta() {
     system("pause");
 
 }
-
+/**
+ * @brief Realiza un depósito en una cuenta bancaria de un titular.
+ * 
+ */
 void Sistema::realizarDeposito() {
     if (titulares.vacia()) {
         cout << "\nNo hay titulares registrados.\n" << endl;
@@ -822,7 +883,13 @@ void Sistema::realizarDeposito() {
         return;
     }
 
-    float monto = val.ingresarMonto((char*)"\nIngrese monto a depositar:\n");
+    float monto;
+    do {
+    monto = val.ingresarMonto((char*)"\nIngrese monto a depositar:\n");
+    if (monto < 10.0) {
+        printf("Error: El monto debe ser de 10 dolares o mas.\n");
+    }
+    } while (monto < 10.0);
     // Obtener el número de movimiento
     ListaDobleCircular<Movimiento*>& movs = cuenta->getMovimientos();
     int numMov = 1;
@@ -840,7 +907,10 @@ void Sistema::realizarDeposito() {
     
 }
 
-
+/**
+ * @brief Realiza un retiro de una cuenta bancaria de un titular.
+ * 
+ */
 void Sistema::realizarRetiro() {
     if (titulares.vacia()) {
         cout << "\nNo hay titulares registrados.\n" << endl;
@@ -901,8 +971,8 @@ void Sistema::realizarRetiro() {
     }
 
     float monto = val.ingresarMonto((char*)"\nIngrese monto a retirar:\n");
-    if (monto > cuenta->getSaldo()) {
-        cout << "\nSaldo insuficiente para realizar el retiro.\n" << endl;
+    if (monto > cuenta->getSaldo()|| monto<10) {
+        cout << "\nSaldo insuficiente para realizar el retiro o monto menor a 10 dolares\n" << endl;
         system("pause");
         return;
     }
@@ -1097,7 +1167,10 @@ void Sistema::buscarMovimientosPorFecha() {
     }
     system("pause");
 }
-
+/**
+ * @brief Busca titulares por nombre o apellido.
+ * 
+ */
 void Sistema::buscarPorTitular() {
     system("cls");
     cout << "\n--- BUSQUEDA POR TITULAR ---" << endl;
@@ -1143,7 +1216,10 @@ void Sistema::buscarPorTitular() {
     }
     system("pause");
 }
-
+/**
+ * @brief Busca titulares y cuentas bancarias utilizando un criterio de búsqueda personalizado.
+ * 
+ */
 void Sistema::buscarPersonalizada() {
     system("cls");
     cout << "\n--- BUSQUEDA PERSONALIZADA GLOBAL ---" << endl;
@@ -1295,7 +1371,10 @@ void Sistema::buscarPersonalizada() {
     system("pause");
     
 }
-
+/**
+ * @brief Muestra la ayuda del sistema abriendo un archivo CHM.
+ * 
+ */
 void Sistema::mostrarAyuda() {
     system("cls");
     cout << "\n--- AYUDA DEL SISTEMA ---\n" << endl;
@@ -1304,7 +1383,11 @@ void Sistema::mostrarAyuda() {
     system("start Ayuda-CuentasBancarias.chm");
     system("pause");
 }
-
+/**
+ * @brief Actualiza los contadores de cuentas en cada sucursal.
+ * 
+ * Recorre la lista de titulares y sus cuentas, actualizando el contador de cuentas en cada sucursal.
+ */
 // Supón que tienes: titulares (ListaDobleCircular<Titular*>&) y listaSucursales (ListaSucursales&)
 void Sistema::actualizarContadoresSucursales() {
     // Reinicia todos los contadores
@@ -1429,7 +1512,10 @@ void Sistema::actualizarContadoresSucursales() {
         window.display();
     }
 }*/
-
+/**
+ * @brief Muestra el menú de busquedas binarias.
+ * 
+ */
 // BUSQUEDAS BINARIAS
 void Sistema::busquedasBinarias() {
     menuBB();
@@ -1570,38 +1656,26 @@ void Sistema::menuBB() {
                 }
                 system("pause");
                 break;
-            }case 5: {
-                cout << "\n--- Buscar sucursal mas cercana ---\n";
-                cout << " Esta funcion encuentra la sucursal mas cercana a las coordenadas geograficas ingresadas.\n";
-                float latUsuario = val.ingresarCoordenada((char*)"Ingrese latitud:",true);
-                float lonUsuario = val.ingresarCoordenada((char*)"Ingrese longitud:",false);
-                Sucursal* sucursal = buscador.sucursalMasCercana(listaSucursales.getCabeza(), latUsuario, lonUsuario);
-                if (sucursal) {
-
-                    cout << "\nSucursal mas cercana:\n";
-                    sucursal->imprimir();
-                    srand(time(0));
-                    int diasFuturos = rand() % 5 + 1;      // Entre 1 y 5 días después
-                    int hora = rand() % 9 + 8;             // Entre 08 y 16
-                    int minuto = (rand() % 4) * 15;        // 0, 15, 30, 45
-
-                    FechaHora cita;
-                    cita.actualizarFechaHora();            // obtener fecha actual
-                    cita.setDia(cita.getDia() + diasFuturos);
-                    cita.setHora(hora);
-                    cita.setMinuto(minuto);
-                    cita.setSegundo(0);
-
-                    // Mostrar cita generada
-                    cout << "\nCita generada exitosamente:\n";
-                    cout << "Sucursal: " << sucursal->getNombre() << endl;
-                    cout << "FechaDeGeneracionDeCita: " << cita.obtenerFecha() << endl;
-                    cout << "HoraDeGeneracionDeCita: " << cita.obtenerHora() << endl;
-                 } else {
-                    cout << "No se encontraron sucursales.\n";
-                }
-                system("pause");
-                break;
+            }case 5: {cout << "\n--- Buscar sucursal mas cercana ---\n";
+    cout << " Esta funcion encuentra la sucursal mas cercana a las coordenadas geograficas ingresadas.\n";
+    float latUsuario = val.ingresarCoordenada((char*)"\nIngrese latitud:", true);
+    float lonUsuario = val.ingresarCoordenada((char*)"\nIngrese longitud:", false);
+    Sucursal* sucursal = buscador.sucursalMasCercana(listaSucursales.getCabeza(), latUsuario, lonUsuario);
+    if (sucursal) {
+        cout << "\nSucursal mas cercana:\n";
+        sucursal->imprimir();
+        
+        // Crear cita para el siguiente día laborable
+        FechaHora fechaActual;
+        fechaActual.actualizarFechaHora(); // Obtener fecha y hora actual
+        Cita cita(sucursal, fechaActual);
+        cita.mostrar();
+        
+    } else {
+        cout << "No se encontraron sucursales.\n";
+    }
+    system("pause");
+    break;
                 }  
             /*case 6: {
                 cout << "\n--- Calcular intervalo maximo entre citas ---\n";
@@ -1648,6 +1722,10 @@ void Sistema::menuBB() {
         }
         }while(opcion != 6);
     }
+    /**
+         * @brief Guarda los titulares y sus cuentas bancarias en un archivo de texto.
+         * 
+         */
 void Sistema::guardarTitularesEnTxt() {
     system("cls");
     cout << "\n--- GUARDAR TITULARES EN ARCHIVO TXT ---" << endl;
@@ -1734,7 +1812,12 @@ void Sistema::guardarTitularesEnTxt() {
 
     system("pause");
 }
-
+/**
+ * @brief Genera un hash MD5 simple del contenido de un archivo.
+ * 
+ * @param nombreArchivo 
+ * @return std::string 
+ */
 std::string Sistema::generarHashMD5(const std::string& nombreArchivo) {
     ifstream archivo(nombreArchivo, ios::binary);
     if (!archivo) {

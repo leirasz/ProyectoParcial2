@@ -1,3 +1,13 @@
+/**
+ * @file BPlusTreeTitulares.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-07-10
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 #include "BPlusTreeTitulares.h"
 #include <iostream>
 
@@ -344,4 +354,41 @@ void BPlusTreeTitulares::construirDesdeLista(NodoDoble<Titular*>* cabeza) {
         insertar(t->getPersona().getCI(), t);
         actual = actual->siguiente;
     } while (actual != cabeza);
+}
+void BPlusTreeTitulares::imprimirArbolBPlus() const {
+    if (!raiz) {
+        std::cout << "Arbol B+ vacio" << std::endl;
+        return;
+    }
+    std::cout << "Nivel 0 (Raiz):" << std::endl;
+    imprimirNodoArbolBPlus(raiz, 0);
+}
+
+void BPlusTreeTitulares::imprimirNodoArbolBPlus(NodoBPlus* nodo, int nivel) const {
+    if (!nodo) return;
+
+    // Indentación basada en el nivel
+    std::string indent(nivel * 4, ' ');
+    std::string connector = (nivel > 0) ? "  |--" : "";
+
+    // Etiqueta de nivel
+    std::cout << indent << "Nivel " << nivel << ": " << connector << "[";
+
+    // Mostrar las claves
+    for (int i = 0; i < nodo->numClaves; ++i) {
+        std::cout << nodo->claves[i];
+        if (i < nodo->numClaves - 1) std::cout << ", ";
+    }
+    std::cout << "]" << (nodo->esHoja ? " (Hoja)" : " (Interno)") << std::endl;
+
+    // Imprimir hijos si no es hoja
+    if (!nodo->esHoja) {
+        for (int i = 0; i <= nodo->numClaves; ++i) {
+            // Línea de conexión
+            if (i < nodo->numClaves) {
+                std::cout << indent << "  |" << std::endl;
+            }
+            imprimirNodoArbolBPlus(nodo->hijos[i], nivel + 1);
+        }
+    }
 }

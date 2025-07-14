@@ -120,12 +120,8 @@ char CuentaBancaria::calcularDigitoVerificador(const std::string& cuenta) {
         }
     }
 
-    int digito = suma % 11;
-    if (digito == 0) {
-        return '0';
-    }
-
-    return '1' + (11 - digito) % 10;
+   int digito =(11-(suma%11))%10;
+    return '0'+digito;
 }
 
 void CuentaBancaria::imprimir() {

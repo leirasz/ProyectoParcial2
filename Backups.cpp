@@ -1,10 +1,24 @@
+/**
+ * @file Backups.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-07-10
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 #include "Backups.h"
 #include <fstream>  
 #include <iostream>
 #include <ctime>
 #include "ArchivoBinario.h"
 #include "BPlusTreeTitulares.h"
-
+/**
+ * @brief Crea un backup de los titulares y sus cuentas bancarias en un archivo binario.
+ * 
+ * @param titulares 
+ */
 void Backups :: crearBackup (const ListaDobleCircular<Titular*>& titulares) {
     if (titulares.vacia()) {
         std::cout << "\nNo hay titulares registrados para respaldar.\n" << std::endl;

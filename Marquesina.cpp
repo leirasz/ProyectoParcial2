@@ -1,10 +1,4 @@
-/**
- * @file Marquesina.cpp
- * @brief Implementación de la clase Marquesina para mostrar un texto animado en la consola (marquesina).
- *
- * Esta clase permite mostrar un texto desplazándose horizontalmente en la parte superior de la consola,
- * utilizando hilos, sincronización y manipulación avanzada de la consola de Windows.
- */
+
 #include "Marquesina.h"
 #include <iostream>
 #include <thread>
@@ -12,9 +6,6 @@
 #include <windows.h>
 #include <algorithm>
 
-/**
- * @brief Constructor. Inicializa los atributos y configura la consola.
- */
 Marquesina::Marquesina() : ejecutando(false), pausado(false), necesita_actualizacion(false),
                           ancho_consola(80), alto_consola(25), posicion_actual(0) {
     handle_consola = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -22,17 +13,12 @@ Marquesina::Marquesina() : ejecutando(false), pausado(false), necesita_actualiza
     inicializar_buffer();
 }
 
-/**
- * @brief Destructor. Detiene la marquesina y libera recursos.
- */
+
 Marquesina::~Marquesina() {
     detener();
 }
 
-/**
- * @brief Inicia la animación de la marquesina con el texto proporcionado.
- * @param texto Texto a mostrar en la marquesina.
- */
+
 void Marquesina::iniciar(const std::string& texto) {
     if (ejecutando.load()) {
         detener();
@@ -47,9 +33,7 @@ void Marquesina::iniciar(const std::string& texto) {
     hilo_marquesina = std::thread(&Marquesina::ejecutar_marquesina, this);
 }
 
-/**
- * @brief Detiene la animación de la marquesina y limpia la línea superior.
- */
+
 void Marquesina::detener() {
     ejecutando = false;
     if (hilo_marquesina.joinable()) {
@@ -62,25 +46,16 @@ void Marquesina::detener() {
                          FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
-/**
- * @brief Pausa la animación de la marquesina.
- */
+
 void Marquesina::pausar() {
     pausado = true;
 }
 
-/**
- * @brief Reanuda la animación de la marquesina si estaba pausada.
- */
+
 void Marquesina::reanudar() {
     pausado = false;
 }
 
-/**
- * @brief Hilo principal que ejecuta la animación de la marquesina.
- *
- * Actualiza la posición del texto, renderiza la línea superior y gestiona la sincronización.
- */
 void Marquesina::ejecutar_marquesina() {
     auto ultimo_update = std::chrono::steady_clock::now();
     
@@ -133,9 +108,7 @@ void Marquesina::ejecutar_marquesina() {
     }
 }
 
-/**
- * @brief Obtiene las dimensiones actuales de la consola (ancho y alto).
- */
+
 void Marquesina::obtener_dimensiones_consola() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (GetConsoleScreenBufferInfo(handle_consola, &csbi)) {
@@ -147,9 +120,6 @@ void Marquesina::obtener_dimensiones_consola() {
     }
 }
 
-/**
- * @brief Inicializa los buffers de pantalla y color para la animación.
- */
 void Marquesina::inicializar_buffer() {
     buffer_pantalla.resize(alto_consola);
     buffer_colores.resize(alto_consola);
@@ -160,9 +130,6 @@ void Marquesina::inicializar_buffer() {
     }
 }
 
-/**
- * @brief Actualiza el buffer de la línea de marquesina con la posición actual del texto.
- */
 void Marquesina::actualizar_marquesina_en_buffer() {
     // Crear línea de marquesina completamente limpia
     std::string linea_marquesina(ancho_consola, ' ');
@@ -206,12 +173,7 @@ void Marquesina::actualizar_pantalla_completa() {
     }
 }
 
-/**
- * @brief Escribe una línea en la consola de forma segura, restaurando el estado original.
- * @param fila Número de fila donde escribir.
- * @param texto Texto a mostrar.
- * @param color Color de texto a usar.como
- */
+
 void Marquesina::escribir_linea_segura(int fila, const std::string& texto, WORD color) {
     if (fila < 0 || fila >= alto_consola) return;
     
@@ -243,16 +205,11 @@ void Marquesina::escribir_linea_segura(int fila, const std::string& texto, WORD 
     SetConsoleCursorPosition(handle_consola, pos_original);
 }
 
-/**
- * @brief Captura el estado actual de la consola (atributos y posición del cursor).
- */
+
 void Marquesina::capturar_estado_consola() {
     GetConsoleScreenBufferInfo(handle_consola, &info_consola_original);
 }
 
-/**
- * @brief Restaura el estado original de la consola (atributos y posición del cursor).
- */
 void Marquesina::restaurar_estado_consola() {
     SetConsoleTextAttribute(handle_consola, info_consola_original.wAttributes);
     SetConsoleCursorPosition(handle_consola, info_consola_original.dwCursorPosition);

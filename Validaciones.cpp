@@ -1,3 +1,13 @@
+/**
+ * @file Validaciones.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-07-10
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 #include "Validaciones.h"
 #include <iostream>
 #include <conio.h>
@@ -439,7 +449,7 @@ string Validaciones::ingresarCodigoSucursal(char msj[50]) {
 float Validaciones:: ingresarCoordenada(char msj[50], bool esLatitud ) {
         char c;
         int i = 0;
-        char dato[10]; // Máximo: -XX.XXXX (9 caracteres: signo, 2 dígitos, punto, 4 dígitos, '\0')
+        char dato[11]; // Máximo: -XX.XXXX (9 caracteres: signo, 2 dígitos, punto, 4 dígitos, '\0')
         bool haySigno = false;
         bool hayPunto = false;
         int digitosEnteros = 0;
@@ -455,7 +465,7 @@ float Validaciones:: ingresarCoordenada(char msj[50], bool esLatitud ) {
                 haySigno = true;
             }
             // Permitir dígitos para la parte entera (máximo 2)
-            else if (c >= '0' && c <= '9' && !hayPunto && digitosEnteros < 2) {
+            else if (c >= '0' && c <= '9' && !hayPunto && digitosEnteros < 3) {
                 if (i < 9) { // Asegurar espacio para el resto
                     dato[i++] = c;
                     std::cout << c;

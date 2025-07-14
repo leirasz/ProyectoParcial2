@@ -1,3 +1,13 @@
+/**
+ * @file ArchivoBinario.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-07-10
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 #include "ArchivoBinario.h"
 #include "Persona.h"
 #include "CuentaBancaria.h"
