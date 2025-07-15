@@ -257,30 +257,94 @@ void Sistema::menuPrincipal() {
  * @param qrMatrix 
  */
 // Generar código QR básico (versión 1, 21x21)
-void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
+void imprimirQR(const bool qrMatrix[25][25]) {
+    cout << "\nMatriz QR generada (■ = negro, espacio = blanco):\n";
+    for (int i = 0; i < 25; ++i) {
+        for (int j = 0; j < 25; ++j) {
+            cout << (qrMatrix[i][j] ? "■" : " ");
+        }
+        cout << endl;
+    }
+}
+
+// Funciones para Reed-Solomon en GF(2^8)
+vector<int> gf_log(256, 0), gf_exp(511, 0);
+
+void init_gf() {
+    int x = 1;
+    for (int i = 0; i < 255; ++i) {
+        gf_exp[i] = x;
+        gf_log[x] = i;
+        x = (x << 1) ^ (x & 0x80 ? 0x11D : 0); // Polinomio x^8 + x^4 + x^3 + x^2 + 1
+    }
+    for (int i = 255; i < 511; ++i) {
+        gf_exp[i] = gf_exp[i - 255];
+    }
+}
+
+int gf_mult(int a, int b) {
+    if (a == 0 || b == 0) return 0;
+    return gf_exp[(gf_log[a] + gf_log[b]) % 255];
+}
+
+int gf_div(int a, int b) {
+    if (a == 0) return 0;
+    if (b == 0) throw runtime_error("División por cero en GF(2^8)");
+    return gf_exp[(gf_log[a] + 255 - gf_log[b]) % 255];
+}
+
+vector<int> generate_polynomial(int degree) {
+    vector<int> poly(degree + 1);
+    poly[0] = 1;
+    for (int i = 0; i < degree; ++i) {
+        vector<int> temp = poly;
+        for (int j = 0; j < poly.size(); ++j) {
+            poly[j] = gf_mult(temp[j], gf_exp[i]);
+            if (j > 0) poly[j] ^= temp[j - 1];
+        }
+    }
+    return poly;
+}
+
+vector<int> reed_solomon(const vector<int>& data, int ec_bytes) {
+    vector<int> gen = generate_polynomial(ec_bytes);
+    vector<int> msg = data;
+    msg.resize(data.size() + ec_bytes, 0);
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (msg[i] == 0) continue;
+        int coef = msg[i];
+        for (size_t j = 0; j < gen.size(); ++j) {
+            msg[i + j] ^= gf_mult(gen[j], coef);
+        }
+    }
+    vector<int> ec_codes(ec_bytes);
+    for (int i = 0; i < ec_bytes; ++i) {
+        ec_codes[i] = msg[data.size() + i];
+    }
+    return ec_codes;
+}
+
+void Sistema::generarQR(const string& data, bool qrMatrix[25][25]) {
     // Inicializar la matriz QR
-    for (int i = 0; i < 21; ++i) {
-        for (int j = 0; j < 21; ++j) {
+    for (int i = 0; i < 25; ++i) {
+        for (int j = 0; j < 25; ++j) {
             qrMatrix[i][j] = false;
         }
     }
 
-    // Patrones fijos (finder patterns) en las esquinas
+    // Patrones fijos (finder patterns)
     auto dibujarFinderPattern = [&](int startX, int startY) {
-        // Cuadrado exterior 7x7
         for (int i = 0; i < 7; ++i) {
             qrMatrix[startX][startY + i] = true;
             qrMatrix[startX + 6][startY + i] = true;
             qrMatrix[startX + i][startY] = true;
             qrMatrix[startX + i][startY + 6] = true;
         }
-        // Cuadrado interior 5x5 (blanco)
         for (int i = 1; i < 6; ++i) {
             for (int j = 1; j < 6; ++j) {
                 qrMatrix[startX + i][startY + j] = false;
             }
         }
-        // Cuadrado central 3x3
         for (int i = 2; i < 5; ++i) {
             for (int j = 2; j < 5; ++j) {
                 qrMatrix[startX + i][startY + j] = true;
@@ -289,16 +353,44 @@ void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
     };
 
     dibujarFinderPattern(0, 0);   // Superior izquierda
-    dibujarFinderPattern(0, 14);  // Superior derecha
-    dibujarFinderPattern(14, 0);  // Inferior izquierda
+    dibujarFinderPattern(0, 18);  // Superior derecha
+    dibujarFinderPattern(18, 0);  // Inferior izquierda
 
     // Líneas de temporización
-    for (int i = 8; i < 13; ++i) {
+    for (int i = 8; i < 17; ++i) {
         qrMatrix[6][i] = (i % 2 == 0);
         qrMatrix[i][6] = (i % 2 == 0);
     }
 
-    // Codificación de datos (modo alfanumérico simplificado)
+    // Patrón de alineación
+    for (int i = 16; i < 21; ++i) {
+        for (int j = 16; j < 21; ++j) {
+            if (i == 16 || i == 20 || j == 16 || j == 20) {
+                qrMatrix[i][j] = true;
+            } else if (i == 17 || i == 19 || j == 17 || j == 19) {
+                qrMatrix[i][j] = false;
+            } else {
+                qrMatrix[i][j] = true;
+            }
+        }
+    }
+
+    // Formato de información (nivel L, máscara 0: 01000 0010111110)
+    bool formatInfo[15] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0};
+    int formatPositions[15][2] = {
+        {0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {5, 8}, {7, 8}, {8, 8},
+        {8, 7}, {8, 5}, {8, 4}, {8, 3}, {8, 2}, {8, 1}, {8, 0}
+    };
+    int formatPositionsRight[15][2] = {
+        {0, 24}, {1, 24}, {2, 24}, {3, 24}, {4, 24}, {5, 24}, {7, 24}, {8, 24},
+        {24, 7}, {24, 5}, {24, 4}, {24, 3}, {24, 2}, {24, 1}, {24, 0}
+    };
+    for (int i = 0; i < 15; ++i) {
+        qrMatrix[formatPositions[i][0]][formatPositions[i][1]] = formatInfo[i];
+        qrMatrix[formatPositionsRight[i][0]][formatPositionsRight[i][1]] = formatInfo[i];
+    }
+
+    // Codificación de datos (modo alfanumérico)
     const string alfanumerico = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
     auto getCharValue = [&](char c) -> int {
         for (size_t i = 0; i < alfanumerico.size(); ++i) {
@@ -307,37 +399,93 @@ void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
         return -1;
     };
 
+    // Validar y preparar datos
     vector<int> valores;
-    string truncatedData = data.substr(0, 25); // Limitar a 25 caracteres
+    string cleanData;
+    for (char c : data) {
+        if (getCharValue(c) != -1) {
+            cleanData += toupper(c);
+        } else {
+            cout << "\nAdvertencia: Carácter inválido '" << c << "' ignorado.\n";
+        }
+    }
+    string truncatedData = cleanData.substr(0, 47); // Máximo 47 caracteres
+    cout << "\nDatos para el QR: " << truncatedData << "\n";
+
     for (char c : truncatedData) {
         int val = getCharValue(c);
-        if (val != -1) valores.push_back(val);
+        if (val != -1) {
+            valores.push_back(val);
+        }
+    }
+    if (valores.empty()) {
+        cout << "\nError: No se encontraron caracteres válidos para el QR.\n";
+        return;
     }
 
-    // Codificar en modo alfanumérico
+    // Codificar datos en bits
     vector<bool> bits;
     bits.insert(bits.end(), {0, 0, 1, 0}); // Modo alfanumérico: 0010
     int len = valores.size();
-    for (int i = 7; i >= 0; --i) {
-        bits.push_back((len >> i) & 1);
+    for (int i = 8; i >= 0; --i) {
+        bits.push_back((len >> i) & 1); // Longitud (9 bits)
     }
     for (size_t i = 0; i < valores.size(); i += 2) {
         int val1 = valores[i];
         int val2 = (i + 1 < valores.size()) ? valores[i + 1] : 0;
         int combined = val1 * 45 + val2;
         for (int j = 10; j >= 0; --j) {
-            bits.push_back((combined >> j) & 1);
+            bits.push_back((combined >> j) & 1); // 11 bits por grupo
         }
     }
-    while (bits.size() < 208) {
-        bits.push_back(0);
+
+    // Convertir bits a bytes para Reed-Solomon
+    vector<int> data_bytes;
+    for (size_t i = 0; i < bits.size(); i += 8) {
+        int byte = 0;
+        for (int j = 0; j < 8 && (i + j) < bits.size(); ++j) {
+            byte |= (bits[i + j] ? 1 : 0) << (7 - j);
+        }
+        data_bytes.push_back(byte);
+    }
+    while (data_bytes.size() < 26) { // Rellenar hasta 26 bytes
+        data_bytes.push_back(0);
     }
 
-    // Colocar datos en la matriz (patrón en zigzag simplificado)
+    // Generar códigos de corrección Reed-Solomon
+    init_gf();
+    vector<int> ec_codes = reed_solomon(data_bytes, 7); // 7 bytes de corrección
+
+    // Convertir bytes de datos y corrección a bits
+    bits.clear();
+    for (int byte : data_bytes) {
+        for (int i = 7; i >= 0; --i) {
+            bits.push_back((byte >> i) & 1);
+        }
+    }
+    for (int ec : ec_codes) {
+        for (int i = 7; i >= 0; --i) {
+            bits.push_back((ec >> i) & 1);
+        }
+    }
+
+    // Añadir padding hasta 272 bits
+    vector<bool> padding = {1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}; // ECBB
+    while (bits.size() < 272) {
+        bits.insert(bits.end(), padding.begin(), padding.end());
+    }
+    if (bits.size() > 272) {
+        bits.resize(272);
+    }
+
+    // Colocar datos en la matriz (zigzag)
     int bitIndex = 0;
-    for (int col = 20; col >= 0 && bitIndex < bits.size(); col -= 2) {
-        if (col == 6) continue;
-        for (int row = 20; row >= 0 && bitIndex < bits.size(); --row) {
+    for (int col = 24; col >= 0 && bitIndex < bits.size(); col -= 2) {
+        if (col == 6) continue; // Saltar líneas de temporización
+        for (int row = 24; row >= 0 && bitIndex < bits.size(); --row) {
+            if (row <= 8 && (col <= 8 || col >= 16)) continue; // Finder patterns
+            if (row >= 16 && col <= 8) continue; // Finder inferior izquierda
+            if (row >= 16 && col >= 16 && row <= 20 && col <= 20) continue; // Patrón alineación
             if (qrMatrix[row][col] == false) {
                 qrMatrix[row][col] = bits[bitIndex++];
             }
@@ -348,7 +496,10 @@ void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
         col--;
         if (col < 0) break;
         if (col == 6) col--;
-        for (int row = 0; row < 21 && bitIndex < bits.size(); ++row) {
+        for (int row = 0; row < 25 && bitIndex < bits.size(); ++row) {
+            if (row <= 8 && (col <= 8 || col >= 16)) continue;
+            if (row >= 16 && col <= 8) continue;
+            if (row >= 16 && col >= 16 && row <= 20 && col <= 20) continue;
             if (qrMatrix[row][col] == false) {
                 qrMatrix[row][col] = bits[bitIndex++];
             }
@@ -357,94 +508,64 @@ void Sistema::generarQR(const std::string& data, bool qrMatrix[21][21]) {
             }
         }
     }
+
+    // Aplicar máscara 0: (i + j) % 2 == 0
+    for (int i = 0; i < 25; ++i) {
+        for (int j = 0; j < 25; ++j) {
+            if (i <= 8 && (j <= 8 || j >= 16)) continue; // Finder patterns
+            if (i >= 16 && j <= 8) continue;
+            if (i >= 16 && j >= 16 && i <= 20 && j <= 20) continue; // Patrón alineación
+            if (i == 6 || j == 6) continue; // Líneas de temporización
+            if ((i + j) % 2 == 0) {
+                qrMatrix[i][j] = !qrMatrix[i][j];
+            }
+        }
+    }
+
+    // Imprimir matriz para depuración
+    imprimirQR(qrMatrix);
 }
-/**
- * @brief Genera un archivo PDF con la información del titular y el código QR.
- * 
- * @param nombre 
- * @param numeroCuenta 
- * @param qrMatrix 
- * @param outputFile 
- */
-// Generar archivo PDF
-void Sistema::generarPDF(const std::string& nombre, const std::string& numeroCuenta, bool qrMatrix[21][21], const std::string& outputFile) {
+
+void Sistema::generarPDF(const string& nombre, const string& cedula, const string& numeroCuenta, bool qrMatrix[25][25], const string& outputFile) {
     ofstream archivo(outputFile, ios::binary);
     if (!archivo) {
         cout << "\nNo se pudo crear el archivo PDF.\n" << endl;
         return;
     }
 
-    // Escribir el encabezado del PDF
     archivo << "%PDF-1.4\n";
+    archivo << "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+    archivo << "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+    archivo << "3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\nendobj\n";
+    archivo << "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
 
-    // Objeto 1: Catálogo
-    archivo << "1 0 obj\n"
-            << "<< /Type /Catalog /Pages 2 0 R >>\n"
-            << "endobj\n";
-
-    // Objeto 2: Página
-    archivo << "2 0 obj\n"
-            << "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
-            << "endobj\n";
-
-    // Objeto 3: Contenido de la página
-    archivo << "3 0 obj\n"
-            << "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>\n"
-            << "endobj\n";
-
-    // Objeto 4: Fuente
-    archivo << "4 0 obj\n"
-            << "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n"
-            << "endobj\n";
-
-    // Objeto 5: Contenido de la página
     stringstream contenido;
-    contenido << "5 0 obj\n"
-              << "<< /Length " << /* longitud se calculará después */ " >>\n"
-              << "stream\n"
-              << "BT\n"
-              << "/F1 12 Tf\n"
-              << "100 750 Td\n"
-              << "(Código QR - Información de Cuenta Bancaria) Tj\n"
-              << "100 730 Td\n"
-              << "(Titular: " << nombre << ") Tj\n"
-              << "100 710 Td\n"
-              << "(Nº Cuenta: " << numeroCuenta << ") Tj\n"
-              << "ET\n";
+    contenido << "5 0 obj\n<< /Length " << /* longitud se calculará después */ " >>\nstream\nBT\n/F1 12 Tf\n100 750 Td\n(Código QR - Información de Cuenta Bancaria) Tj\n100 730 Td\n(Titular: " << nombre << ") Tj\n100 710 Td\n(Cédula: " << cedula << ") Tj\n100 690 Td\n(Nº Cuenta: " << numeroCuenta << ") Tj\nET\n";
 
-    // Dibujar el código QR (10x10 puntos por módulo)
     float xBase = 100, yBase = 600;
-    float moduleSize = 10;
-    for (int i = 0; i < 21; ++i) {
-        for (int j = 0; j < 21; ++j) {
+    float moduleSize = 12; // Aumentado para mejor legibilidad
+    float quietZone = 48;  // 4 módulos (4 * 12)
+    contenido << "q\n1 1 1 rg\n" << (xBase - quietZone) << " " << (yBase - 25 * moduleSize - quietZone) << " " << (25 * moduleSize + 2 * quietZone) << " " << (25 * moduleSize + 2 * quietZone) << " re\nf\nQ\n";
+    for (int i = 0; i < 25; ++i) {
+        for (int j = 0; j < 25; ++j) {
             if (qrMatrix[i][j]) {
                 float x = xBase + j * moduleSize;
-                float y = yBase - i * moduleSize; // Invertir Y para PDF
-                contenido << "q\n"
-                          << "0 0 0 rg\n"
-                          << x << " " << (y - moduleSize) << " " << moduleSize << " " << moduleSize << " re\n"
-                          << "f\n"
-                          << "Q\n";
+                float y = yBase - i * moduleSize;
+                contenido << "q\n0 0 0 rg\n" << x << " " << (y - moduleSize) << " " << moduleSize << " " << moduleSize << " re\nf\nQ\n";
             }
         }
     }
 
+    contenido << "endstream\nendobj\n";
     string contenidoStr = contenido.str();
-    contenidoStr += "endstream\nendobj\n";
-
-    // Actualizar la longitud del contenido
     string longitud = to_string(contenidoStr.size() - string("5 0 obj\n<< /Length  >> stream\n").size() - string("endstream\nendobj\n").size());
     contenidoStr.replace(contenidoStr.find("/Length ") + 8, 0, longitud);
-
     archivo << contenidoStr;
 
-    // Cross-reference table
-    archivo << "xref\n"
-            << "0 6\n"
-            << "0000000000 65535 f \n";
+    archivo << "xref\n0 6\n0000000000 65535 f \n";
     stringstream xref;
     xref << setfill('0') << setw(10);
-    size_t offset = 9; // Longitud de "%PDF-1.4\n"
+    size_t offset = 9;
     xref << offset << " 00000 n \n";
     offset += string("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n").size();
     xref << offset << " 00000 n \n";
@@ -456,21 +577,11 @@ void Sistema::generarPDF(const std::string& nombre, const std::string& numeroCue
     xref << offset << " 00000 n \n";
     archivo << xref.str();
 
-    // Trailer
-    archivo << "trailer\n"
-            << "<< /Size 6 /Root 1 0 R >>\n"
-            << "startxref\n"
-            << offset << "\n"
-            << "%%EOF\n";
-
+    archivo << "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" << offset << "\n%%EOF\n";
     archivo.close();
     cout << "\nPDF generado exitosamente: " << outputFile << "\n" << endl;
 }
-/**
- * @brief Muestra el menú secundario del sistema bancario y permite al usuario seleccionar opciones.
- * 
- */
-// Generar código QR en PDF
+
 void Sistema::generarQRPDF() {
     system("cls");
     cout << "\n--- GENERAR CÓDIGO QR EN PDF ---\n" << endl;
@@ -481,7 +592,7 @@ void Sistema::generarQRPDF() {
         return;
     }
 
-    string cedula = val.ingresarCedula("\nIngrese cedula del titular:");
+    string cedula = val.ingresarCedula("\nIngrese cédula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
     if (!titular) {
         cout << "\nTitular no encontrado.\n" << endl;
@@ -495,56 +606,43 @@ void Sistema::generarQRPDF() {
         return;
     }
 
-    string tipo = val.ingresarCadena("\nTipo de cuenta (Corriente/Ahorro):");
-    for (char& c : tipo) c = toupper(c);
     CuentaBancaria* cuenta = nullptr;
-    string idCuenta = val.ingresarNumeros("\nIngrese ID de la cuenta:");
-
-    if (tipo == "CORRIENTE") {
+    string tipoCuenta;
+    if (titular->getCuentaCorriente()) {
         cuenta = titular->getCuentaCorriente();
-        if (!cuenta || cuenta->getID() != idCuenta) {
-            cout << "\nCuenta corriente no encontrada o ID incorrecto.\n" << endl;
-            system("pause");
-            return;
-        }
-    } else if (tipo == "AHORRO") {
+        tipoCuenta = "CORRIENTE";
+    } else {
         NodoDoble<CuentaBancaria*>* actual = titular->getCuentasAhorro().getCabeza();
         if (actual) {
-            do {
-                if (actual->dato->getID() == idCuenta) {
-                    cuenta = actual->dato;
-                    break;
-                }
-                actual = actual->siguiente;
-            } while (actual != titular->getCuentasAhorro().getCabeza());
+            cuenta = actual->dato;
+            tipoCuenta = "AHORRO";
         }
-        if (!cuenta) {
-            cout << "\nCuenta de ahorro no encontrada.\n" << endl;
-            system("pause");
-            return;
-        }
-    } else {
-        cout << "\nTipo de cuenta no valido.\n" << endl;
+    }
+
+    if (!cuenta) {
+        cout << "\nNo se encontró una cuenta válida para el titular.\n" << endl;
         system("pause");
         return;
     }
 
-    // Generar el texto para el QR
     string nombre = titular->getPersona().getNombre() + " " + titular->getPersona().getApellido();
     string numeroCuenta = cuenta->getID();
-    string qrData = "Titular: " + nombre + ", Cuenta: " + numeroCuenta;
-    if (qrData.size() > 25) {
-        qrData = qrData.substr(0, 25); // Limitar a 25 caracteres
-        cout << "\nAdvertencia: Los datos fueron truncados a 25 caracteres para el código QR.\n";
+    string qrData = "CI:" + cedula + ";NOMBRE:" + nombre + ";CUENTA:" + numeroCuenta;
+    if (qrData.size() > 47) {
+        qrData = qrData.substr(0, 47);
+        cout << "\nAdvertencia: Los datos fueron truncados a 47 caracteres para el código QR.\n";
     }
 
-    // Generar la matriz QR
-    bool qrMatrix[21][21];
+    cout << "\nTitular encontrado:\n";
+    cout << "Nombre: " << nombre << "\n";
+    cout << "Cédula: " << cedula << "\n";
+    cout << "Cuenta seleccionada: " << tipoCuenta << " (ID: " << numeroCuenta << ")\n";
+
+    bool qrMatrix[25][25] = {false};
     generarQR(qrData, qrMatrix);
 
-    // Generar el PDF
     string outputFile = "qr_" + cedula + ".pdf";
-    generarPDF(nombre, numeroCuenta, qrMatrix, outputFile);
+    generarPDF(nombre, cedula, numeroCuenta, qrMatrix, outputFile);
 
     system("pause");
 }
@@ -984,7 +1082,7 @@ void Sistema::realizarRetiro() {
     }
     Movimiento* mov = new Movimiento(monto, false, numMov);
     cuenta->agregarMovimiento(mov);
-    cuenta->setSaldo(cuenta->getSaldo() - monto);
+   // cuenta->setSaldo(cuenta->getSaldo() - monto);
 
     // *** Obtener la lista actualizada después de agregar el movimiento ***
     movs = cuenta->getMovimientos();

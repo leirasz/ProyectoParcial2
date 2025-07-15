@@ -33,12 +33,13 @@ private:
     std::string generarHashMD5(const std::string& nombreArchivo);
     bool compararHashArchivo(const std::string& nombreArchivo);
     // Nuevas funciones para generar el código QR y el PDF
-    void generarQR(const std::string& data, bool qrMatrix[21][21]);
-    void generarPDF(const std::string& nombre, const std::string& numeroCuenta, bool qrMatrix[21][21], const std::string& outputFile);
 
 public:
     Sistema();
     ~Sistema();
+    void generarQR(const string& data, bool qrMatrix[25][25]);
+    void generarPDF(const string& nombre, const string& cedula, const string& numeroCuenta, bool qrMatrix[25][25], const string& outputFile);
+    void generarQRPDF();
 
     void menuPrincipal();
     void registrarTitular();
@@ -59,8 +60,7 @@ public:
     void busquedasBinarias();
     void menuBB();
     void guardarTitularesEnTxt();
-    // Nueva función para generar el QR en PDF
-    void generarQRPDF();
+
 };
 
 #endif

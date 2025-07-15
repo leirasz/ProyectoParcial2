@@ -285,13 +285,13 @@ float  Validaciones::ingresarMonto(const char* mensaje) {
 string Validaciones::ingresarNumeros(char msj[50]) {
     char c;
     int i = 0;
-    char dato[11]; // Ajusta el tamaño según la longitud máxima de tu ID
+    char dato[12]; // Ajusta el tamaño según la longitud máxima de tu ID
 
     cout << msj << endl;
 
     while ((c = getch()) != 13) { // Enter
         if (c >= '0' && c <= '9') {
-            if (i < 19) {
+            if (i < 12) {
                 dato[i++] = c;
                 cout << c;
             }
@@ -366,32 +366,48 @@ string Validaciones::ingresarCorreo(char msj[50]) {
         i = 0;
         cout << msj << endl;
 
-        while ((c = getch()) != 13) {
+        while ((c = getch()) != 13) { // 13 = ENTER
             if (isalnum(c) || c == '@' || c == '.' || c == '-' || c == '_') {
                 if (i < 50) {
                     correo[i++] = c;
                     cout << c;
                 }
-            } else if (c == 8 && i > 0) {
+            } else if (c == 8 && i > 0) { // Backspace
                 i--;
                 cout << "\b \b";
             }
         }
         correo[i] = '\0';
 
-        // Validación básica de formato
         string correoStr = string(correo);
+
+        // ===== Validaciones adicionales =====
         size_t arroba = correoStr.find('@');
         size_t punto = correoStr.find('.', arroba);
-        if (arroba == string::npos || punto == string::npos || arroba == 0 || punto == correoStr.length() - 1 || punto < arroba + 2) {
-            cout << "\nCorreo invalido. Debe tener formato usuario@dominio.ext\n";
+
+        bool tieneSoloUnArroba = (arroba != string::npos) && (correoStr.find('@', arroba + 1) == string::npos);
+        bool puntoDespuesDeArroba = (punto != string::npos && punto > arroba + 1);
+        bool puntoNoAlFinal = (punto != correoStr.length() - 1);
+        bool noEmpiezaNiTerminaConPunto = (correoStr[0] != '.' && correoStr.back() != '.');
+        bool sinPuntosConsecutivos = (correoStr.find("..") == string::npos);
+        bool noHayPuntoJustoAntesDeArroba = (arroba > 0 && correoStr[arroba - 1] != '.');
+        bool noHayPuntoJustoDespuesDeArroba = (arroba < correoStr.length() - 1 && correoStr[arroba + 1] != '.');
+
+        if (!tieneSoloUnArroba ||
+            !puntoDespuesDeArroba ||
+            !puntoNoAlFinal ||
+            !noEmpiezaNiTerminaConPunto ||
+            !sinPuntosConsecutivos ||
+            !noHayPuntoJustoAntesDeArroba ||
+            !noHayPuntoJustoDespuesDeArroba) {
+            cout << "\nCorreo invalido. Formato incorrecto.\n";
             system("pause");
         } else {
             return correoStr;
         }
+
     } while (true);
 }
-
 string Validaciones::ingresarTextoLibre(char msj[50]) {
     char c;
     int i = 0;
