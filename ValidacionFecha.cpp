@@ -118,3 +118,26 @@ int ValidacionFecha::compararFechas(int d1, int m1, int a1, int d2, int m2, int 
     if (d1 > d2) return 1;
     return 0;
 }
+bool ValidacionFecha::ingresarFecha2(std::string& fecha, int& dia, int& mes, int& anio) {
+    do {
+        std::cout << "\nIngrese la fecha (DD/MM/AAAA): ";
+        std::getline(std::cin, fecha);
+        if (!formatoCorrecto(fecha)) {
+            std::cout << "\nFormato incorrecto. Debe ser DD/MM/AAAA.\n";
+            continue;
+        }
+        try {
+            dia = std::stoi(fecha.substr(0, 2));
+            mes = std::stoi(fecha.substr(3, 2));
+            anio = std::stoi(fecha.substr(6, 4));
+        } catch (const std::exception& e) {
+            std::cout << "\nError al procesar la fecha. Intente de nuevo.\n";
+            continue;
+        }
+        if (!valoresValidos(dia, mes, anio)) {
+            std::cout << "\nFecha invalida.\n";
+            continue;
+        }
+        return true;
+    } while (true);
+}

@@ -61,6 +61,7 @@ public:
     void guardarTitularesEnTxt();
     // Nueva función para generar el QR en PDF
     void generarQRPDF();
+    void graficarArbol();
 };
 
 #endif

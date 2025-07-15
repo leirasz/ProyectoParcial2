@@ -14,6 +14,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+//#include <SFML/Graphics.hpp>
 using namespace std;
 
 Sistema::Sistema(): arbolTitulares(3) {
@@ -190,7 +191,6 @@ void Sistema::menuPrincipal() {
         "Crear cuenta",
         "Realizar deposito",
         "Realizar retiro",
-        "Buscar movimientos por fecha",
         "Buscar titular por datos",
         "Busqueda personalizada",
         "Busquedas Binarias",
@@ -207,20 +207,20 @@ void Sistema::menuPrincipal() {
     Menu menu;
     int opcion;
     do {
-        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 17); // Update to 17 options
+        opcion = menu.ingresarMenu("SISTEMA BANCARIO", opciones, 16); // Update to 17 options
         switch(opcion) {
             case 1: registrarTitular(); break;
             case 2: crearCuenta(); break;
             case 3: realizarDeposito(); break;
             case 4: realizarRetiro(); break;
-            case 5: buscarMovimientosPorFecha(); break;
-            case 6: buscarPorTitular(); break;
-            case 7: buscarPersonalizada(); break;
-            case 8: menuBB(); break;
-            case 9: menuSecundario(); break;
-            case 10: menuArbol(); break;
-            case 11: guardarTitularesEnTxt(); break;
-            case 12: {
+            //case 5: buscarMovimientosPorFecha(); break;
+            case 5: buscarPorTitular(); break;
+            case 6: buscarPersonalizada(); break;
+            case 7: menuBB(); break;
+            case 8: menuSecundario(); break;
+            case 9: menuArbol(); break;
+            case 10: guardarTitularesEnTxt(); break;
+            case 11: {
                 system("cls");
                 cout << "\n--- VERIFICAR INTEGRIDAD DE ARCHIVO TXT ---" << endl;
                 cout << "Esto compara el hash MD5 actual del archivo con el hash almacenado en la tabla hash.\n";
@@ -233,22 +233,22 @@ void Sistema::menuPrincipal() {
                 system("pause");
                 break;
             }
-            case 13: {
+            case 12: {
                 system("cls");
                 cout << "\n--- MOSTRAR TABLA HASH ---" << endl;
                 hashes.mostrarContenido();
                 system("pause");
                 break;
             }
-            case 14: mostrarAyuda(); break;
-            case 15: generarQRPDF(); break;
-            case 16: generarPDFTitulares(); break; // Nueva opción
-            case 17: {Backups backup;
+            case 13: mostrarAyuda(); break;
+            case 14: generarQRPDF(); break;
+            case 15: generarPDFTitulares(); break; // Nueva opción
+            case 16: {Backups backup;
                 backup.crearBackup(titulares);
                 cout << "\nSaliendo...\n" << endl; break;}
             default: cout << "\nOpcion invalida." << endl; system("pause"); break;
         }
-    } while(opcion != 17);
+    } while(opcion != 16);
 }
 /**
  * @brief Genera un código QR básico (versión 1, 21x21) a partir de una cadena de datos.
@@ -918,7 +918,7 @@ void Sistema::realizarRetiro() {
         return;
     }
     system("cls");
-    cout << "\n--- REALIZAR RETIRO ---" << endl;
+    cout << "\n--- REALIZAR RETIRO ---\n" << endl;
 
     string cedula = val.ingresarCedula((char*)"\nIngrese cedula del titular:");
     Titular* titular = buscarTitularPorCI(cedula);
@@ -1043,65 +1043,66 @@ void Sistema::guardarArchivoBinSinCifrar() {
     system("pause");
 }
 
-void Sistema::decifrarArchivoCifrado() {
-    system("cls");
-    cout << "\n--- DECIFRAR ARCHIVO CIFRADO ---" << endl;
-    ifstream archivo("cuentasCifrado.bin", ios::binary);
-    if (!archivo) {
-        cout << "\nNo se pudo abrir el archivo cifrado.\n" << endl;
-        system("pause");
-        return;
-    }
-
-    int desplazamiento = 3; 
-    cifrarCesarArchivoBinario(std::string("cuentasCifrado.bin"), std::string("cuentasDecifradas.bin"), -desplazamiento);
-    ArchivoBinario::guardar(titulares, "cuentasDecifradas.bin");
-    cout << "\nArchivo decifrado y cargado exitosamente.\n" << endl;
-    system("pause");
-}
-
-void Sistema::buscarMovimientosPorFecha() {
+/*void Sistema::buscarMovimientosPorFecha() {
     if (titulares.vacia()) {
-        cout << "\nNo hay titulares registrados.\n" << endl;
+        std::cout << "\nNo hay titulares registrados.\n" << std::endl;
         system("pause");
         return;
     }
     system("cls");
-    cout << "\n--- BUSCAR MOVIMIENTOS POR RANGO DE FECHAS ---" << endl;
+    std::cout << "\n--- BUSCAR MOVIMIENTOS POR RANGO DE FECHAS ---\n";
 
-    // Ingreso y validación de fechas de inicio y fin
-    ValidacionFecha valFecha;
-    string fechaStr1, fechaStr2;
-    int d1, m1, a1, d2, m2, a2;
-    cout << "\nFecha de INICIO:" << endl;
-    valFecha.ingresarFecha(fechaStr1, d1, m1, a1);
-    cout << "\nFecha de FIN:" << endl;
-    valFecha.ingresarFecha(fechaStr2, d2, m2, a2);
+    try {
+        // Ingreso y validación de fechas de inicio y fin
+        ValidacionFecha valFecha;
+        std::string fechaStr1, fechaStr2;
+        int d1, m1, a1, d2, m2, a2;
+        std::cout << "\nFecha de INICIO:\n";
+        if (!valFecha.ingresarFecha(fechaStr1, d1, m1, a1)) {
+            std::cout << "\nError al ingresar la fecha de inicio.\n";
+            system("pause");
+            return;
+        }
+        std::cout << "\nFecha de FIN:\n";
+        if (!valFecha.ingresarFecha(fechaStr2, d2, m2, a2)) {
+            std::cout << "\nError al ingresar la fecha de fin.\n";
+            system("pause");
+            return;
+        }
 
-    // Proceso para asegurar que la fecha menor sea la inicial
-    int iniDia, iniMes, iniAnio, finDia, finMes, finAnio;
-    if (valFecha.compararFechas(d1, m1, a1, d2, m2, a2) <= 0) {
-        iniDia = d1; iniMes = m1; iniAnio = a1;
-        finDia = d2; finMes = m2; finAnio = a2;
-    } else {
-        iniDia = d2; iniMes = m2; iniAnio = a2;
-        finDia = d1; finMes = m1; finAnio = a1;
-    }
+        // Asegurar que la fecha menor sea la inicial
+        int iniDia, iniMes, iniAnio, finDia, finMes, finAnio;
+        if (valFecha.compararFechas(d1, m1, a1, d2, m2, a2) <= 0) {
+            iniDia = d1; iniMes = m1; iniAnio = a1;
+            finDia = d2; finMes = m2; finAnio = a2;
+        } else {
+            iniDia = d2; iniMes = m2; iniAnio = a2;
+            finDia = d1; finMes = m1; finAnio = a1;
+        }
 
-    // Función para saber si una fecha está en el rango
-    auto fechaEnRango = [&](const Fecha& f) {
-        int cmpIni = valFecha.compararFechas(iniDia, iniMes, iniAnio, f.getDia(), f.getMes(), f.getAnio().getAnio());
-        int cmpFin = valFecha.compararFechas(f.getDia(), f.getMes(), f.getAnio().getAnio(), finDia, finMes, finAnio);
-        return cmpIni <= 0 && cmpFin <= 0;
-    };
+        auto fechaEnRango = [&](const Fecha& f) {
+            if (!f.esValida()) return false; // Suponiendo que Fecha tenga un método esValida()
+            int cmpIni = valFecha.compararFechas(iniDia, iniMes, iniAnio, f.getDia(), f.getMes(), f.getAnio().getAnio());
+            int cmpFin = valFecha.compararFechas(f.getDia(), f.getMes(), f.getAnio().getAnio(), finDia, finMes, finAnio);
+            return cmpIni <= 0 && cmpFin <= 0;
+        };
 
-    NodoDoble<Titular*>* actual = titulares.getCabeza();
-    bool encontrado = false;
-    if (actual) {
+        NodoDoble<Titular*>* actual = titulares.getCabeza();
+        bool encontrado = false;
+        if (!actual) {
+            std::cout << "\nNo hay titulares disponibles.\n" << std::endl;
+            system("pause");
+            return;
+        }
+
         do {
+            if (!actual->dato) {
+                actual = actual->siguiente;
+                continue;
+            }
             Titular* titular = actual->dato;
             Persona p = titular->getPersona();
-            string nombreTitular = p.getNombre() + " " + p.getApellido();
+            std::string nombreTitular = p.getNombre() + " " + p.getApellido();
 
             // Cuenta corriente
             CuentaBancaria* cc = titular->getCuentaCorriente();
@@ -1110,21 +1111,21 @@ void Sistema::buscarMovimientosPorFecha() {
                 NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
                 if (nodoMov) {
                     do {
-                        Movimiento* m = nodoMov->dato;
-                        if (m) {
+                        if (nodoMov->dato) {
+                            Movimiento* m = nodoMov->dato;
                             Fecha f = m->getFechaMov();
                             if (fechaEnRango(f)) {
-                                cout << "Cuenta ID: " << cc->getID()
-                                     << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
-                                     << " | Titular: " << nombreTitular
-                                     << " | Monto: " << m->getMonto()
-                                     << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
-                                     << endl;
+                                std::cout << "Cuenta ID: " << cc->getID()
+                                          << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
+                                          << " | Titular: " << nombreTitular
+                                          << " | Monto: " << m->getMonto()
+                                          << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
+                                          << std::endl;
                                 encontrado = true;
                             }
                         }
                         nodoMov = nodoMov->siguiente;
-                    } while (nodoMov != movs.getCabeza());
+                    } while (nodoMov && nodoMov != movs.getCabeza());
                 }
             }
 
@@ -1133,40 +1134,44 @@ void Sistema::buscarMovimientosPorFecha() {
             if (nodoA) {
                 NodoDoble<CuentaBancaria*>* temp = nodoA;
                 do {
-                    CuentaBancaria* ca = temp->dato;
-                    ListaDobleCircular<Movimiento*> movs = ca->getMovimientos();
-                    NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
-                    if (nodoMov) {
-                        do {
-                            Movimiento* m = nodoMov->dato;
-                            if (m) {
-                                Fecha f = m->getFechaMov();
-                                if (fechaEnRango(f)) {
-                                    cout << "Cuenta ID: " << ca->getID()
-                                         << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
-                                         << " | Titular: " << nombreTitular
-                                         << " | Monto: " << m->getMonto()
-                                         << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
-                                         << endl;
-                                    encontrado = true;
+                    if (temp->dato) {
+                        CuentaBancaria* ca = temp->dato;
+                        ListaDobleCircular<Movimiento*> movs = ca->getMovimientos();
+                        NodoDoble<Movimiento*>* nodoMov = movs.getCabeza();
+                        if (nodoMov) {
+                            do {
+                                if (nodoMov->dato) {
+                                    Movimiento* m = nodoMov->dato;
+                                    Fecha f = m->getFechaMov();
+                                    if (fechaEnRango(f)) {
+                                        std::cout << "Cuenta ID: " << ca->getID()
+                                                  << " | Fecha: " << f.getDia() << "/" << f.getMes() << "/" << f.getAnio().getAnio()
+                                                  << " | Titular: " << nombreTitular
+                                                  << " | Monto: " << m->getMonto()
+                                                  << " | Tipo: " << (m->getTipo() ? "Deposito" : "Retiro")
+                                                  << std::endl;
+                                        encontrado = true;
+                                    }
                                 }
-                            }
-                            nodoMov = nodoMov->siguiente;
-                        } while (nodoMov != movs.getCabeza());
+                                nodoMov = nodoMov->siguiente;
+                            } while (nodoMov && nodoMov != movs.getCabeza());
+                        }
                     }
                     temp = temp->siguiente;
-                } while (temp != nodoA);
+                } while (temp && temp != nodoA);
             }
 
             actual = actual->siguiente;
-        } while (actual != titulares.getCabeza());
-    }
+        } while (actual && actual != titulares.getCabeza());
 
-    if (!encontrado) {
-        cout << "\nNo se encontraron movimientos en el rango de fechas.\n" << endl;
+        if (!encontrado) {
+            std::cout << "\nNo se encontraron movimientos en el rango de fechas.\n" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cout << "\nError inesperado: " << e.what() << "\n";
     }
     system("pause");
-}
+}*/
 /**
  * @brief Busca titulares por nombre o apellido.
  * 
@@ -1875,3 +1880,108 @@ bool Sistema::compararHashArchivo(const std::string& nombreArchivo) {
     }
     return coincide;
 }
+void Sistema::decifrarArchivoCifrado() {
+    system("cls");
+    cout << "\n--- DECIFRAR ARCHIVO CIFRADO ---" << endl;
+    ifstream archivo("cuentasCifrado.bin", ios::binary);
+    if (!archivo) {
+        cout << "\nNo se pudo abrir el archivo cifrado.\n" << endl;
+        system("pause");
+        return;
+    }
+
+    int desplazamiento = 3; 
+    cifrarCesarArchivoBinario(std::string("cuentasCifrado.bin"), std::string("cuentasDecifradas.bin"), -desplazamiento);
+    ArchivoBinario::guardar(titulares, "cuentasDecifradas.bin");
+    cout << "\nArchivo decifrado y cargado exitosamente.\n" << endl;
+    system("pause");
+}
+
+/*void Sistema::graficarArbol() {
+    // Crear la ventana SFML
+    sf::RenderWindow window(sf::VideoMode(1200, 800), "Arbol B+");
+    window.setFramerateLimit(60);
+
+    // Cargar la fuente para el texto
+    sf::Font font;
+    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
+        std::cout << "Error al cargar la fuente Arial." << std::endl;
+        return;
+    }
+
+    // Obtener la raíz del árbol B+
+    NodoBPlus* raiz = arbolTitulares.getRaiz();
+
+    // Función recursiva para dibujar nodos
+    auto dibujarNodo = [&](auto& self, NodoBPlus* nodo, float x, float y, float dx, int nivel) -> void {
+        if (!nodo) return;
+
+        // Calcular el ancho del nodo basado en el número de claves
+        float nodoAncho = 50.0f + (nodo->numClaves * 50.0f); // Aumentar espacio por clave
+        float nodoAlto = 40.0f;
+
+        // Crear el rectángulo del nodo
+        sf::RectangleShape rect(sf::Vector2f(nodoAncho, nodoAlto));
+        rect.setPosition(x - nodoAncho / 2, y);
+        rect.setFillColor(nodo->esHoja ? sf::Color(144, 238, 144) : sf::Color(173, 216, 230)); // Verde para hojas, azul para internos
+        rect.setOutlineColor(sf::Color::Black);
+        rect.setOutlineThickness(1);
+
+        // Crear el texto con las claves
+        std::string texto;
+        for (int i = 0; i < nodo->numClaves; ++i) {
+            texto += nodo->claves[i] + (i < nodo->numClaves - 1 ? ", " : "");
+        }
+        sf::Text textoNodo(texto, font, 12);
+        textoNodo.setFillColor(sf::Color::Black);
+        textoNodo.setPosition(x - nodoAncho / 2 + 5, y + 10); // Ajustar posición del texto
+
+        // Dibujar el nodo
+        window.draw(rect);
+        window.draw(textoNodo);
+
+        // Dibujar conexiones a hijos si no es hoja
+        if (!nodo->esHoja) {
+            float hijoX = x - ((nodo->numClaves) * dx / 2); // Posición inicial de los hijos
+            float nuevoY = y + 80; // Separación vertical
+            for (int i = 0; i <= nodo->numClaves; ++i) {
+                if (nodo->hijos[i]) {
+                    // Dibujar línea de conexión
+                    sf::Vertex linea[] = {
+                        sf::Vertex(sf::Vector2f(x - nodoAncho / 2 + (i * nodoAncho / (nodo->numClaves + 1)), y + nodoAlto), sf::Color::Black),
+                        sf::Vertex(sf::Vector2f(hijoX + i * dx, nuevoY), sf::Color::Black)
+                    };
+                    window.draw(linea, 2, sf::Lines);
+                    // Llamar recursivamente para dibujar el hijo
+                    self(self, nodo->hijos[i], hijoX + i * dx, nuevoY, dx / std::max(2.0f, float(nodo->numClaves + 1)), nivel + 1);
+                }
+            }
+        }
+    };
+
+    // Bucle principal de la ventana
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)) {
+                window.close();
+            }
+        }
+
+        // Limpiar la ventana
+        window.clear(sf::Color::White);
+
+        // Dibujar el árbol o un mensaje si está vacío
+        if (raiz) {
+            dibujarNodo(dibujarNodo, raiz, 600, 50, 300, 0); // Centro en x=600, y=50, separación inicial=300
+        } else {
+            sf::Text texto("Arbol B+ vacio", font, 20);
+            texto.setFillColor(sf::Color::Black);
+            texto.setPosition(550, 350);
+            window.draw(texto);
+        }
+
+        // Mostrar en pantalla
+        window.display();
+    }
+}*/

@@ -12,6 +12,7 @@ public:
    void setAnio(Anio newAnio);
    Fecha();
    ~Fecha();
+   bool esValida() const;
 
 protected:
 private:

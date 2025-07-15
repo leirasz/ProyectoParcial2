@@ -10,7 +10,7 @@
  */
 #include "Anio.h"
 
-int Anio::getAnio(void)
+int Anio::getAnio(void) const
 {
    return anio;
 }

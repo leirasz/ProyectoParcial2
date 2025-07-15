@@ -10,6 +10,7 @@
  */
 #include "BPlusTreeTitulares.h"
 #include <iostream>
+//#include <SFML/Graphics.hpp>
 
 BPlusTreeTitulares::BPlusTreeTitulares(int grado_) : raiz(nullptr), grado(grado_) {}
 
@@ -392,3 +393,4 @@ void BPlusTreeTitulares::imprimirNodoArbolBPlus(NodoBPlus* nodo, int nivel) cons
         }
     }
 }
+

@@ -12,6 +12,7 @@ public:
     bool esBisiesto(int anio);
     bool esMayorDeEdad(int dia, int mes, int anio);
     int compararFechas(int d1, int m1, int a1, int d2, int m2, int a2);
+    bool ingresarFecha2(std::string& fecha, int& dia, int& mes, int& anio);
 };
 
 #endif

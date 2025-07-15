@@ -14,7 +14,7 @@
 class Anio
 {
 public:
-   int getAnio(void);
+   int getAnio(void) const;
    void setAnio(int newAnio);
    bool getAnioBisiesto(void);
    void setAnioBisiesto(bool newAnioBisiesto);
